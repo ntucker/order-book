@@ -1,0 +1,6 @@
+allowBuilds:
+  # The native resolver binding is provided by the platform-specific
+  # optionalDependency (@unrs/resolver-binding-*), so unrs-resolver's
+  # postinstall is not required. Declining it keeps `pnpm install` clean
+  # and non-interactive.
+  unrs-resolver: false
