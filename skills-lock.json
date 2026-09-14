@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "data-client-manager": {
+      "source": "reactive/data-client",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/data-client-manager/SKILL.md",
+      "computedHash": "c17e035c31d845cac7fe2a2952db227de61744a23d2350e463de2b51c4b86777"
+    },
+    "data-client-react": {
+      "source": "reactive/data-client",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/data-client-react/SKILL.md",
+      "computedHash": "32e13b9d320a96bf95c72db8a76a06076523ca36386235307f77fd3276430a51"
+    },
+    "data-client-react-testing": {
+      "source": "reactive/data-client",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/data-client-react-testing/SKILL.md",
+      "computedHash": "3ed9c8b734e36c87afa6796a309941976c92852f527f356da4a054541fe1e576"
+    },
+    "data-client-rest": {
+      "source": "reactive/data-client",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/data-client-rest/SKILL.md",
+      "computedHash": "732dd83af858b3a1ed0a839255ca02b34fffdc8f6692fe1aaee3386162d39711"
+    },
+    "data-client-schema": {
+      "source": "reactive/data-client",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/data-client-schema/SKILL.md",
+      "computedHash": "a5a867c7f37d516dee09f8f1dc8f2a9fa88d4ba238e72af2dde1862158855e73"
+    }
+  }
+}
