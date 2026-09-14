@@ -1,0 +1,218 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.columns,
+.row,
+.empty {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  padding: 0 12px;
+}
+
+.columns {
+  height: 24px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.columns span:nth-child(2),
+.columns span:nth-child(3),
+.qty,
+.total {
+  text-align: right;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  position: relative;
+  height: var(--row-h);
+  align-items: center;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.row:hover {
+  background: var(--surface-2);
+}
+
+.empty {
+  height: var(--row-h);
+}
+
+.depth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: right center;
+  transform: scaleX(var(--depth, 0));
+  transition: transform 120ms linear;
+  z-index: 0;
+}
+
+.askDepth {
+  composes: depth;
+  background: var(--ask-soft);
+}
+
+.bidDepth {
+  composes: depth;
+  background: var(--bid-soft);
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: flash 600ms ease-out;
+}
+
+.askFlash {
+  --flash: var(--ask-flash);
+}
+
+.bidFlash {
+  --flash: var(--bid-flash);
+}
+
+.price,
+.qty,
+.total {
+  position: relative;
+  z-index: 1;
+}
+
+.ask {
+  color: var(--ask);
+}
+
+.bid {
+  color: var(--bid);
+}
+
+.qty {
+  color: var(--text);
+}
+
+.total {
+  color: var(--text-2);
+}
+
+.spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 12px;
+  border-block: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.spreadMeta {
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.footer {
+  height: 24px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bar {
+  flex: 1;
+  height: 4px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.bidBar {
+  background: color-mix(in oklab, var(--bid) 70%, transparent);
+}
+
+.askBar {
+  background: color-mix(in oklab, var(--ask) 70%, transparent);
+}
+
+.imb {
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.modes {
+  display: flex;
+  gap: 2px;
+}
+
+.icon {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.iconAsk,
+.iconBid {
+  height: 3px;
+  border-radius: 1px;
+}
+
+.iconAsk {
+  background: var(--ask);
+  width: 8px;
+}
+
+.iconBid {
+  background: var(--bid);
+  width: 12px;
+}
+
+.iconBoth .iconAsk {
+  width: 10px;
+}
+
+.iconAskOnly .iconAsk {
+  width: 12px;
+}
+
+.iconAskOnly .iconBid {
+  width: 0;
+}
+
+.iconBidOnly .iconAsk {
+  width: 0;
+}

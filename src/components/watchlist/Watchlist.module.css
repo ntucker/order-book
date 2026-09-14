@@ -1,0 +1,145 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.row:hover {
+  background: var(--surface-2);
+}
+
+.active {
+  composes: row;
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row::after,
+.chip::after {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0;
+}
+
+:is(.row, .chip)[data-pending]::after {
+  animation: pulse 1s ease-in-out 100ms infinite;
+}
+
+.pair {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.base {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.quote {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.price {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  text-align: right;
+}
+
+.flashBid {
+  animation: priceFlashBid 800ms ease-out;
+}
+
+.flashAsk {
+  animation: priceFlashAsk 800ms ease-out;
+}
+
+@keyframes priceFlashBid {
+  from {
+    color: var(--bid);
+  }
+  to {
+    color: var(--text-2);
+  }
+}
+
+@keyframes priceFlashAsk {
+  from {
+    color: var(--ask);
+  }
+  to {
+    color: var(--text-2);
+  }
+}
+
+.pct {
+  min-width: 58px;
+  text-align: right;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.up {
+  color: var(--bid);
+  background: var(--bid-soft);
+}
+
+.down {
+  color: var(--ask);
+  background: var(--ask-soft);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.chipActive {
+  composes: chip;
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}

@@ -1,0 +1,153 @@
+.grid {
+  height: 100%;
+  padding: 12px;
+  gap: 12px;
+  display: grid;
+  grid-template-columns: 220px 360px minmax(0, 1fr) 280px;
+  grid-template-rows: 72px minmax(0, 1fr);
+  grid-template-areas:
+    'watch ticker ticker ticker'
+    'watch book   center trades';
+}
+
+.grid[data-pending] {
+  cursor: progress;
+}
+
+.grid[data-pending] :is(.ticker, .book, .center, .trades) {
+  opacity: 0.55;
+  transition: opacity 150ms ease 100ms;
+}
+
+.watch > *,
+.book > *,
+.trades > *,
+.chart > *,
+.depth > *,
+.ticker > * {
+  height: 100%;
+}
+
+.watch {
+  grid-area: watch;
+  min-height: 0;
+}
+
+.ticker {
+  grid-area: ticker;
+  min-height: 0;
+}
+
+.book {
+  grid-area: book;
+  min-height: 0;
+}
+
+.center {
+  grid-area: center;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chart {
+  flex: 1;
+  min-height: 0;
+}
+
+.depth {
+  height: 200px;
+  flex-shrink: 0;
+}
+
+.trades {
+  grid-area: trades;
+  min-height: 0;
+}
+
+.chips {
+  display: none;
+}
+
+.switcher {
+  display: none;
+}
+
+.mobilePane {
+  display: contents;
+}
+
+@media (max-width: 1279px) {
+  .grid {
+    height: auto;
+    min-height: calc(100dvh - 48px);
+    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-rows: auto 72px minmax(420px, 1fr) 280px;
+    grid-template-areas:
+      'chips chips'
+      'ticker ticker'
+      'book center'
+      'book trades';
+  }
+
+  .watch {
+    display: none;
+  }
+
+  .chips {
+    display: block;
+    grid-area: chips;
+    min-height: 0;
+  }
+
+  .depth {
+    height: 160px;
+  }
+}
+
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto minmax(calc(100dvh - 200px), 1fr);
+    grid-template-areas:
+      'chips'
+      'ticker'
+      'switcher'
+      'pane';
+  }
+
+  .book,
+  .center,
+  .trades,
+  .mobilePane {
+    display: none;
+  }
+
+  .switcher {
+    display: flex;
+    grid-area: switcher;
+    justify-content: center;
+  }
+
+  .showBook {
+    display: block;
+    grid-area: pane;
+    min-height: 0;
+    height: calc(100dvh - 200px);
+  }
+
+  .showChart {
+    display: flex;
+    grid-area: pane;
+    min-height: 0;
+    height: calc(100dvh - 200px);
+  }
+
+  .showTrades {
+    display: block;
+    grid-area: pane;
+    min-height: 0;
+    height: calc(100dvh - 200px);
+  }
+}

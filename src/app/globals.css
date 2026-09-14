@@ -1,0 +1,143 @@
+:root {
+  --bg: #0a0d12;
+  --surface: #10151c;
+  --surface-2: #161c25;
+  --surface-3: #1e2632;
+  --border: #1c232d;
+  --border-strong: #2a3441;
+  --text: #e6e9ef;
+  --text-2: #8b95a5;
+  --text-3: #737e8f;
+  --bid: #16c784;
+  --ask: #ea3943;
+  --bid-soft: color-mix(in oklab, var(--bid) 14%, transparent);
+  --ask-soft: color-mix(in oklab, var(--ask) 14%, transparent);
+  --bid-flash: color-mix(in oklab, var(--bid) 32%, transparent);
+  --ask-flash: color-mix(in oklab, var(--ask) 32%, transparent);
+  --accent: #4c8dff;
+  --warn: #f5a524;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --row-h: 22px;
+  --font-ui: var(--font-geist-sans), system-ui, sans-serif;
+  --font-num: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface-2: #f1f4f8;
+    --surface-3: #e6ebf2;
+    --border: #e3e8ef;
+    --border-strong: #cbd3de;
+    --text: #0f172a;
+    --text-2: #5b6472;
+    --text-3: #7d8795;
+    --bid: #0e9f6e;
+    --ask: #dc2626;
+    --bid-soft: color-mix(in oklab, var(--bid) 12%, transparent);
+    --ask-soft: color-mix(in oklab, var(--ask) 12%, transparent);
+    --bid-flash: color-mix(in oklab, var(--bid) 28%, transparent);
+    --ask-flash: color-mix(in oklab, var(--ask) 28%, transparent);
+  }
+}
+
+html {
+  height: 100%;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.shell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: 48px 1fr;
+  overflow: hidden;
+}
+
+@media (max-width: 1279px) {
+  .shell {
+    overflow: auto;
+  }
+}
+
+@keyframes flash {
+  from {
+    background: var(--flash, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
