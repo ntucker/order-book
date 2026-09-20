@@ -84,6 +84,9 @@ Stepped server rendering uses an in-memory session registry shared by the page
 request and scenario control Route Handlers. It intentionally supports one
 long-lived Node process. Replicated, edge, and serverless deployments need a
 durable shared session coordinator before scenario mode can be enabled safely.
+Loopback development works without configuration. A non-loopback deployment
+must set `SCENARIO_SERVER_ORIGIN` to its trusted HTTP(S) origin; forwarded Host
+headers are not used as arbitrary server-fetch destinations.
 
 ### Checks
 

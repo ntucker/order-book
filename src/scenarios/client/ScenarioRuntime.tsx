@@ -6,8 +6,8 @@ import {
   use,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
-  useRef,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -59,6 +59,7 @@ export class ScenarioRuntime {
   private listeners = new Set<RuntimeListener>();
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
+  private panelPromises = new Map<string, Promise<unknown>>();
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
   private navigate?: (symbol: string) => void;
@@ -165,9 +166,7 @@ export class ScenarioRuntime {
         await afterPaint();
         return;
       case 'navigation-committed':
-        await this.waitUntil(() =>
-          window.location.pathname.endsWith(`/${predicate.symbol}`),
-        );
+        await this.waitForPathname(predicate.symbol);
         await afterPaint();
     }
   }
@@ -240,6 +239,52 @@ export class ScenarioRuntime {
     };
   }
 
+  highlightOccurrences(ids: string[], pinnedId?: string | null) {
+    for (const occurrence of this.occurrences.values()) {
+      delete occurrence.element.dataset.scenarioHighlight;
+      delete occurrence.element.dataset.scenarioIndex;
+    }
+    ids.forEach((id, index) => {
+      const occurrence = this.occurrences.get(id);
+      if (!occurrence) return;
+      occurrence.element.dataset.scenarioHighlight =
+        pinnedId === id ? 'pinned' : 'preview';
+      if (pinnedId === id) {
+        occurrence.element.dataset.scenarioIndex = String(index + 1);
+      }
+    });
+  }
+
+  getPanelGatePromise(panelId: string): Promise<unknown> {
+    let promise = this.panelPromises.get(panelId);
+    if (promise) return promise;
+    const requestOrigin =
+      typeof window === 'undefined'
+        ? this.bootstrap.origin
+        : window.location.origin;
+    promise = fetch(
+      `${requestOrigin}/api/scenarios/${this.bootstrap.runId}/panel/${panelId}`,
+      { cache: 'no-store' },
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error(`Panel gate failed: ${panelId}`);
+        return response.json();
+      })
+      .catch((error) => {
+        this.panelPromises.delete(panelId);
+        throw error;
+      });
+    this.panelPromises.set(panelId, promise);
+    return promise;
+  }
+
+  cleanup() {
+    this.listeners.clear();
+    this.streamListeners.clear();
+    this.occurrences.clear();
+    this.panelPromises.clear();
+  }
+
   private applyCommand(command: ClientScenarioCommand) {
     switch (command.kind) {
       case 'hydrate-dashboard':
@@ -298,6 +343,22 @@ export class ScenarioRuntime {
       });
     });
   }
+
+  private waitForPathname(symbol: string): Promise<void> {
+    const deadline = performance.now() + 15_000;
+    return new Promise((resolve, reject) => {
+      const check = () => {
+        if (window.location.pathname.endsWith(`/${symbol}`)) {
+          resolve();
+        } else if (performance.now() >= deadline) {
+          reject(new Error(`Navigation to ${symbol} did not commit`));
+        } else {
+          requestAnimationFrame(check);
+        }
+      };
+      check();
+    });
+  }
 }
 
 const ScenarioRuntimeContext = createContext<ScenarioRuntime | null>(null);
@@ -314,10 +375,11 @@ export function ScenarioRuntimeProvider({
   useEffect(() => {
     runtime.setNavigate((symbol) => {
       router.push(
-        `/scenarios/${bootstrap.scenarioId}/${bootstrap.runId}/${symbol}`,
+        `/scenarios/${bootstrap.scenarioId}/${bootstrap.runId}/${symbol}${window.location.search}`,
       );
     });
   }, [bootstrap.runId, bootstrap.scenarioId, router, runtime]);
+  useEffect(() => () => runtime.cleanup(), [runtime]);
   return (
     <ScenarioRuntimeContext value={runtime}>
       {children}
@@ -329,14 +391,14 @@ export function useScenarioRuntime(): ScenarioRuntime | null {
   return useContext(ScenarioRuntimeContext);
 }
 
-export function requireScenarioRuntime(): ScenarioRuntime {
+export function useRequiredScenarioRuntime(): ScenarioRuntime {
   const runtime = useScenarioRuntime();
   if (!runtime) throw new Error('Scenario runtime is not available');
   return runtime;
 }
 
 export function ScenarioHydrationGate({ children }: { children: ReactNode }) {
-  const runtime = requireScenarioRuntime();
+  const runtime = useRequiredScenarioRuntime();
   if (typeof window !== 'undefined') use(runtime.hydrationPromise);
   return children;
 }
@@ -347,24 +409,10 @@ export function DashboardHydratedMarker() {
   return null;
 }
 
-const panelPromises = new Map<string, Promise<unknown>>();
-
 export function ScenarioPanelGate({ panelId }: { panelId: string }) {
   const runtime = useScenarioRuntime();
   if (!runtime) return null;
-  const key = `${runtime.bootstrap.runId}:${panelId}`;
-  let promise = panelPromises.get(key);
-  if (!promise) {
-    promise = fetch(
-      `${runtime.bootstrap.origin}/api/scenarios/${runtime.bootstrap.runId}/panel/${panelId}`,
-      { cache: 'no-store' },
-    ).then((response) => {
-      if (!response.ok) throw new Error(`Panel gate failed: ${panelId}`);
-      return response.json();
-    });
-    panelPromises.set(key, promise);
-  }
-  use(promise);
+  use(runtime.getPanelGatePromise(panelId));
   return <i hidden data-scenario-panel={panelId} />;
 }
 
@@ -373,12 +421,13 @@ export function useScenarioOccurrence(
   descriptor: ScenarioOccurrenceDescriptor,
 ) {
   const runtime = useScenarioRuntime();
-  const stableDescriptor = useRef(descriptor);
-  stableDescriptor.current = descriptor;
+  const descriptorKey = JSON.stringify(descriptor);
+  const readDescriptor = useEffectEvent(() => descriptor);
   useEffect(() => {
     const element = ref.current;
     if (!runtime || !element) return;
-    element.dataset.scenarioOccurrence = descriptor.occurrenceId;
-    return runtime.registerOccurrence(stableDescriptor.current, element);
-  }, [descriptor.occurrenceId, ref, runtime]);
+    const current = readDescriptor();
+    element.dataset.scenarioOccurrence = current.occurrenceId;
+    return runtime.registerOccurrence(current, element);
+  }, [descriptorKey, ref, runtime]);
 }

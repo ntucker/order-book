@@ -1,10 +1,25 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import ScenarioApp from '@/scenarios/client/ScenarioApp';
 import { getOrCreateScenarioSession } from '@/scenarios/server/registry';
 import type { ScenarioBootstrap } from '@/scenarios/shared/types';
+
+function trustedScenarioOrigin(): string {
+  const configured =
+    process.env.SCENARIO_SERVER_ORIGIN ??
+    (process.env.NODE_ENV === 'development'
+      ? 'http://127.0.0.1:3000'
+      : undefined);
+  if (!configured) {
+    throw new Error('Production scenarios require SCENARIO_SERVER_ORIGIN');
+  }
+  const origin = new URL(configured);
+  if (origin.protocol !== 'http:' && origin.protocol !== 'https:') {
+    throw new Error('SCENARIO_SERVER_ORIGIN must use HTTP or HTTPS');
+  }
+  return origin.origin;
+}
 
 export async function generateMetadata({
   params,
@@ -23,11 +38,7 @@ export default async function ScenarioPage({
   } catch {
     notFound();
   }
-  const incoming = await headers();
-  const protocol = incoming.get('x-forwarded-proto') ?? 'http';
-  const host = incoming.get('x-forwarded-host') ?? incoming.get('host');
-  if (!host) throw new Error('Scenario route requires a Host header');
-  const origin = `${protocol}://${host}`;
+  const origin = trustedScenarioOrigin();
   const status = session.status();
   const bootstrap: ScenarioBootstrap = {
     ...status,

@@ -6,30 +6,56 @@ import { ScenarioSession } from './ScenarioSession';
 
 const REGISTRY = Symbol.for('order-book.scenario-sessions');
 const IDLE_TTL_MS = 15 * 60 * 1000;
+const COMPLETE_TTL_MS = 5 * 60 * 1000;
+const PRUNE_INTERVAL_MS = 60 * 1000;
+const MAX_SESSIONS = 100;
 
 type Registry = {
   generation: number;
   sessions: Map<string, ScenarioSession>;
+  pruneTimer?: ReturnType<typeof setInterval>;
 };
 
 function registry(): Registry {
   const root = globalThis as typeof globalThis & {
     [REGISTRY]?: Registry;
   };
-  return (root[REGISTRY] ??= {
-    generation: 0,
-    sessions: new Map(),
-  });
+  let reg = root[REGISTRY];
+  if (!reg) {
+    reg = {
+      generation: 0,
+      sessions: new Map(),
+    };
+    root[REGISTRY] = reg;
+  }
+  if (!reg.pruneTimer) {
+    reg.pruneTimer = setInterval(() => pruneIdle(reg), PRUNE_INTERVAL_MS);
+    reg.pruneTimer.unref?.();
+  }
+  return reg;
 }
 
 function pruneIdle(reg: Registry) {
-  const cutoff = Date.now() - IDLE_TTL_MS;
+  const now = Date.now();
   for (const [runId, session] of reg.sessions) {
-    if (session.lastTouched < cutoff) {
+    const complete =
+      session.cursor >= session.scenario.milestones.length;
+    const ttl = complete ? COMPLETE_TTL_MS : IDLE_TTL_MS;
+    if (session.lastTouched < now - ttl) {
       session.dispose('expired');
       reg.sessions.delete(runId);
     }
   }
+}
+
+function enforceCapacity(reg: Registry) {
+  if (reg.sessions.size < MAX_SESSIONS) return;
+  const oldest = [...reg.sessions.entries()].sort(
+    ([, left], [, right]) => left.lastTouched - right.lastTouched,
+  )[0];
+  if (!oldest) return;
+  oldest[1].dispose('expired');
+  reg.sessions.delete(oldest[0]);
 }
 
 export function getOrCreateScenarioSession(
@@ -49,6 +75,7 @@ export function getOrCreateScenarioSession(
     return existing;
   }
   const scenario = compileScenario(getScenarioDefinition(scenarioId));
+  enforceCapacity(reg);
   const session = new ScenarioSession(runId, scenario, ++reg.generation);
   reg.sessions.set(runId, session);
   return session;

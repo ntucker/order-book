@@ -15,12 +15,13 @@ export async function GET(
   request: Request,
   {
     params,
-  }: { params: Promise<{ runId: string; kind: ScenarioRequestKind }> },
+  }: { params: Promise<{ runId: string; kind: string }> },
 ) {
-  const { runId, kind } = await params;
-  if (!KINDS.has(kind)) {
+  const { runId, kind: rawKind } = await params;
+  if (!KINDS.has(rawKind as ScenarioRequestKind)) {
     return Response.json({ error: 'Unknown fixture kind' }, { status: 404 });
   }
+  const kind = rawKind as ScenarioRequestKind;
   const session = getScenarioSession(runId);
   if (!session) {
     return Response.json({ error: 'Unknown scenario run' }, { status: 404 });

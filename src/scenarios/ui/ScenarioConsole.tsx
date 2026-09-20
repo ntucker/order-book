@@ -1,8 +1,9 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -10,7 +11,7 @@ import {
 } from 'react';
 
 import {
-  requireScenarioRuntime,
+  useRequiredScenarioRuntime,
 } from '../client/ScenarioRuntime';
 import type {
   CompiledMilestone,
@@ -206,15 +207,23 @@ function EventInspector({
 }
 
 export default function ScenarioConsole() {
-  const runtime = requireScenarioRuntime();
+  const runtime = useRequiredScenarioRuntime();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const snapshot = useSyncExternalStore(
     runtime.subscribe,
     runtime.getSnapshot,
     runtime.getSnapshot,
   );
-  const [mode, setMode] = useState<Mode>('manual');
-  const [interval, setIntervalMs] = useState(2000);
-  const [playing, setPlaying] = useState(false);
+  const [mode, setMode] = useState<Mode>(
+    searchParams.get('play') === 'auto' ? 'auto' : 'manual',
+  );
+  const [interval, setIntervalMs] = useState(
+    Number(searchParams.get('interval')) || 2000,
+  );
+  const [playing, setPlaying] = useState(
+    searchParams.get('running') === '1',
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [selectedId, setSelectedId] = useState<string>();
@@ -225,9 +234,11 @@ export default function ScenarioConsole() {
 
   const milestones = runtime.bootstrap.milestones;
   const selected = milestones.find((item) => item.id === selectedId);
-  const selectedEvents = selected
-    ? milestoneEvents(snapshot.events, selected.id)
-    : [];
+  const selectedEvents = useMemo(
+    () =>
+      selected ? milestoneEvents(snapshot.events, selected.id) : [],
+    [selected, snapshot.events],
+  );
   const occurrenceIds = useMemo(
     () =>
       [...new Set(selectedEvents.flatMap((event) => event.occurrenceIds))],
@@ -235,7 +246,23 @@ export default function ScenarioConsole() {
   );
   const complete = snapshot.cursor >= milestones.length;
 
-  const advanceOne = useCallback(async () => {
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search);
+    if (mode === 'auto') next.set('play', 'auto');
+    else next.delete('play');
+    if (mode === 'auto') next.set('interval', String(interval));
+    else next.delete('interval');
+    if (mode === 'auto' && playing) next.set('running', '1');
+    else next.delete('running');
+    const query = next.toString();
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}`,
+    );
+  }, [interval, mode, playing]);
+
+  async function advanceOne() {
     if (busy || complete) return;
     setBusy(true);
     setError(undefined);
@@ -256,13 +283,17 @@ export default function ScenarioConsole() {
     } finally {
       setBusy(false);
     }
-  }, [busy, complete, runtime]);
+  }
+
+  const onAutoAdvance = useEffectEvent(() => {
+    void advanceOne();
+  });
 
   useEffect(() => {
     if (mode !== 'auto' || !playing || busy || complete) return;
-    const timer = window.setTimeout(() => void advanceOne(), interval);
+    const timer = window.setTimeout(onAutoAdvance, interval);
     return () => window.clearTimeout(timer);
-  }, [advanceOne, busy, complete, interval, mode, playing, snapshot.cursor]);
+  }, [busy, complete, interval, mode, playing, snapshot.cursor]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -281,30 +312,17 @@ export default function ScenarioConsole() {
           : selected
             ? occurrenceIds
             : [];
-    for (const occurrence of snapshot.occurrences) {
-      delete occurrence.element.dataset.scenarioHighlight;
-      delete occurrence.element.dataset.scenarioIndex;
-    }
-    activeIds.forEach((id, index) => {
-      const occurrence = snapshot.occurrences.find(
-        (candidate) => candidate.occurrenceId === id,
-      );
-      if (!occurrence) return;
-      occurrence.element.dataset.scenarioHighlight =
-        pinnedOccurrence === id ? 'pinned' : 'preview';
-      if (pinnedOccurrence === id) {
-        occurrence.element.dataset.scenarioIndex = String(index + 1);
-      }
-    });
+    runtime.highlightOccurrences(activeIds, pinnedOccurrence);
   }, [
     occurrenceIds,
     pinnedOccurrence,
     previewIds,
+    runtime,
     selected,
-    snapshot.occurrences,
+    snapshot.occurrences.length,
   ]);
 
-  const locate = useCallback(() => {
+  function locate() {
     if (!occurrenceIds.length) return;
     const next = (locateIndex + 1) % occurrenceIds.length;
     const id = occurrenceIds[next];
@@ -317,53 +335,47 @@ export default function ScenarioConsole() {
       behavior: 'smooth',
       block: 'center',
     });
-  }, [locateIndex, occurrenceIds, snapshot.occurrences]);
+  }
+
+  const onRunnerKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (target.matches('input, select, button, textarea')) return;
+    const selectedIndex = milestones.findIndex(
+      (milestone) => milestone.id === selectedId,
+    );
+    if (event.key.toLowerCase() === 'n' && mode === 'manual') {
+      event.preventDefault();
+      void advanceOne();
+    } else if (event.key.toLowerCase() === 'p' && mode === 'auto') {
+      event.preventDefault();
+      setPlaying((value) => !value);
+    } else if (event.key.toLowerCase() === 'j') {
+      event.preventDefault();
+      setSelectedId(
+        milestones[Math.min(milestones.length - 1, selectedIndex + 1)]?.id,
+      );
+    } else if (event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      setSelectedId(milestones[Math.max(0, selectedIndex - 1)]?.id);
+    } else if (event.key.toLowerCase() === 'l') {
+      event.preventDefault();
+      locate();
+    } else if (event.key === 'Escape') {
+      if (pinnedOccurrence) setPinnedOccurrence(null);
+      else setSelectedId(undefined);
+    }
+  });
 
   useEffect(() => {
     const element = consoleRef.current;
     if (!element) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.matches('input, select, button, textarea')) return;
-      const selectedIndex = milestones.findIndex(
-        (milestone) => milestone.id === selectedId,
-      );
-      if (event.key.toLowerCase() === 'n' && mode === 'manual') {
-        event.preventDefault();
-        void advanceOne();
-      } else if (event.key.toLowerCase() === 'p' && mode === 'auto') {
-        event.preventDefault();
-        setPlaying((value) => !value);
-      } else if (event.key.toLowerCase() === 'j') {
-        event.preventDefault();
-        setSelectedId(
-          milestones[Math.min(milestones.length - 1, selectedIndex + 1)]?.id,
-        );
-      } else if (event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setSelectedId(milestones[Math.max(0, selectedIndex - 1)]?.id);
-      } else if (event.key.toLowerCase() === 'l') {
-        event.preventDefault();
-        locate();
-      } else if (event.key === 'Escape') {
-        if (pinnedOccurrence) setPinnedOccurrence(null);
-        else setSelectedId(undefined);
-      }
-    };
-    element.addEventListener('keydown', onKeyDown);
-    return () => element.removeEventListener('keydown', onKeyDown);
-  }, [
-    advanceOne,
-    locate,
-    milestones,
-    mode,
-    pinnedOccurrence,
-    selectedId,
-  ]);
+    element.addEventListener('keydown', onRunnerKeyDown);
+    return () => element.removeEventListener('keydown', onRunnerKeyDown);
+  }, []);
 
   const restart = () => {
     const runId = crypto.randomUUID();
-    window.location.assign(
+    router.push(
       `/scenarios/${runtime.bootstrap.scenarioId}/${runId}/${runtime.bootstrap.initialSymbol}`,
     );
   };
@@ -387,7 +399,7 @@ export default function ScenarioConsole() {
       className={styles.console}
       aria-label="Scenario runner"
       aria-keyshortcuts="N P J K L Escape"
-      tabIndex={-1}
+      tabIndex={0}
     >
       <header className={styles.toolbar}>
         <div className={styles.identity}>

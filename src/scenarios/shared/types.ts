@@ -1,4 +1,10 @@
-import type { CandleInterval } from '@/resources';
+export type ScenarioCandleInterval =
+  | '1m'
+  | '5m'
+  | '15m'
+  | '1h'
+  | '4h'
+  | '1d';
 
 export type ScenarioRequestKind =
   | 'symbol-info'
@@ -86,7 +92,7 @@ export interface ScenarioMarketFixture {
     asks: [string, string][];
   };
   trades: Record<string, unknown>[];
-  candles: Record<CandleInterval, unknown[][]>;
+  candles: Record<ScenarioCandleInterval, unknown[][]>;
 }
 
 export interface ScenarioStreamFixture {

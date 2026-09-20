@@ -9,7 +9,8 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm build && pnpm start -- -p 3100',
+    command:
+      'pnpm build && SCENARIO_SERVER_ORIGIN=http://127.0.0.1:3100 pnpm exec next start -p 3100',
     url: 'http://127.0.0.1:3100/scenarios',
     timeout: 180_000,
     reuseExistingServer: false,

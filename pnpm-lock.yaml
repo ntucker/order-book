@@ -105,24 +105,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@data-client/core': link:../data-client/packages/core
-  '@data-client/endpoint': link:../data-client/packages/endpoint
-  '@data-client/normalizr': link:../data-client/packages/normalizr
-  '@data-client/react': link:../data-client/packages/react
-  '@data-client/rest': link:../data-client/packages/rest
-  '@data-client/use-enhanced-reducer': link:../data-client/packages/use-enhanced-reducer
-
 importers:
 
   .:
     dependencies:
       '@data-client/react':
-        specifier: link:../data-client/packages/react
-        version: link:../data-client/packages/react
+        specifier: ^0.18.1
+        version: 0.18.1(@types/react@19.2.18)(react@19.2.8)
       '@data-client/rest':
-        specifier: link:../data-client/packages/rest
-        version: link:../data-client/packages/rest
+        specifier: ^0.18.1
+        version: 0.18.1
       lightweight-charts:
         specifier: ^5.2.1
         version: 5.2.1
@@ -218,6 +210,10 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  '@babel/runtime@7.29.7':
+    resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/template@7.29.7':
     resolution: {integrity: sha512-puq+Gf35oI24FeN11LkoUQFqv9uwNeWpxXZi/Ji3rRIoKAzKnxRaZ+Gkj0vKS9ZCiTESfng1N9LyOyXvo+m+Gg==}
     engines: {node: '>=6.9.0'}
@@ -229,6 +225,44 @@ packages:
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
+
+  '@data-client/core@0.18.1':
+    resolution: {integrity: sha512-PKDPMTQkxTg669ZXAKdIIlJuPazqk+vVo5Ljya3qDivbw9DDVv+C5kwqsxzs52mMFGsJDQ6Un8siar4IeweMXw==}
+    engines: {node: ^12.17 || ^13.7 || >=14}
+
+  '@data-client/endpoint@0.18.0':
+    resolution: {integrity: sha512-D3pEgUWn7M3mYpjFfCiXitl2rMNoobEm/0F0ugsTnBNghNAru0xwHk09mxkeWObh2NrIo52KrjMKgBzTss7y+g==}
+    engines: {node: ^12.17 || ^13.7 || >=14}
+
+  '@data-client/normalizr@0.18.1':
+    resolution: {integrity: sha512-2tt9iQgMBXOPZdwy5h2E77xNQMdVuKyIgK//8edN/3Ys24Um/0WFxjDt8ShdQf8gYJbGNkEEG4vmGDFFyTL4sg==}
+    engines: {node: ^12.17 || ^13.7 || >=14}
+
+  '@data-client/react@0.18.1':
+    resolution: {integrity: sha512-dpF/Pd1mROpf+K0GqXgHXOHvB7WWBbf+QzIzg0jj8o8l1xpzu/zwXK3ocBcV4Ima6cCGr8OixfMQ0HUbCXNtKA==}
+    engines: {node: ^12.17 || ^13.7 || >=14}
+    peerDependencies:
+      '@react-navigation/native': ^6.0.0 || ^7.0.0
+      '@types/react': ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
+      react: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
+    peerDependenciesMeta:
+      '@react-navigation/native':
+        optional: true
+      '@types/react':
+        optional: true
+
+  '@data-client/rest@0.18.1':
+    resolution: {integrity: sha512-gpzRPBZ5iPE8u36y87DcsJWegOQFD6wfqw9y5CrmJDOjQaNlh0MK8J52iF35zJ8klth+M/x1MECE4ee7K5BVEQ==}
+    engines: {node: ^12.17 || ^13.7 || >=14}
+
+  '@data-client/use-enhanced-reducer@0.1.14':
+    resolution: {integrity: sha512-/VrbDmaygmJSjja5cOxkkiCOnMpvMUdmZ6uDjTZgjCxTyDUI8ZbEJuCmiLntb2ak9a0wq2CC64R3b19huDiT6g==}
+    peerDependencies:
+      '@types/react': ^16.14.0 || ^17.0.0 || ^18.0.0-0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
+      react: ^16.14.0 || ^17.0.0 || ^18.0.0-0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -1340,6 +1374,9 @@ packages:
   flatted@3.4.4:
     resolution: {integrity: sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==}
 
+  flux-standard-action@2.1.2:
+    resolution: {integrity: sha512-7vdgawlphCjzaMLdpZv8hlGC/FJCXu6sqE3Wuqe3HLZ22KcDiO4IFplxLDePDhEt6hgCrugt45RoUObuzZP6Kg==}
+
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
@@ -1705,6 +1742,12 @@ packages:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
 
+  lodash.isplainobject@4.0.6:
+    resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
+
+  lodash.isstring@4.0.1:
+    resolution: {integrity: sha512-0wJxfxH1wgO3GrbuP+dTTk7op+6L41QCXbGINEmD+ny/G/eCqGzxyCsh7159S+mgDDcoarnBw6PC1PS5+wUGgw==}
+
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
 
@@ -1851,6 +1894,9 @@ packages:
 
   path-parse@1.0.7:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
+
+  path-to-regexp@8.4.2:
+    resolution: {integrity: sha512-qRcuIdP69NPm4qbACK+aDogI5CBDMi1jKe0ry5rSQJz8JVLsC7jV8XpiJjGRLLol3N+R5ihGYcrPLTno6pAdBA==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -2372,6 +2418,8 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
+  '@babel/runtime@7.29.7': {}
+
   '@babel/template@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
@@ -2394,6 +2442,42 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
+
+  '@data-client/core@0.18.1':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@data-client/normalizr': 0.18.1
+      flux-standard-action: 2.1.2
+
+  '@data-client/endpoint@0.18.0':
+    dependencies:
+      '@babel/runtime': 7.29.7
+
+  '@data-client/normalizr@0.18.1':
+    dependencies:
+      '@babel/runtime': 7.29.7
+
+  '@data-client/react@0.18.1(@types/react@19.2.18)(react@19.2.8)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@data-client/core': 0.18.1
+      '@data-client/use-enhanced-reducer': 0.1.14(@types/react@19.2.18)(react@19.2.8)
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
+
+  '@data-client/rest@0.18.1':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@data-client/endpoint': 0.18.0
+      path-to-regexp: 8.4.2
+
+  '@data-client/use-enhanced-reducer@0.1.14(@types/react@19.2.18)(react@19.2.8)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -3533,6 +3617,11 @@ snapshots:
 
   flatted@3.4.4: {}
 
+  flux-standard-action@2.1.2:
+    dependencies:
+      lodash.isplainobject: 4.0.6
+      lodash.isstring: 4.0.1
+
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
@@ -3880,6 +3969,10 @@ snapshots:
     dependencies:
       p-locate: 5.0.0
 
+  lodash.isplainobject@4.0.6: {}
+
+  lodash.isstring@4.0.1: {}
+
   lodash.merge@4.6.2: {}
 
   loose-envify@1.4.0:
@@ -4033,6 +4126,8 @@ snapshots:
   path-key@3.1.1: {}
 
   path-parse@1.0.7: {}
+
+  path-to-regexp@8.4.2: {}
 
   picocolors@1.1.1: {}
 

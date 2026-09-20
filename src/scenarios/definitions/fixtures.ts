@@ -1,9 +1,10 @@
-import { CANDLE_INTERVALS, type CandleInterval } from '@/resources';
-
 import type {
+  ScenarioCandleInterval,
   ScenarioFixtures,
   ScenarioMarketFixture,
 } from '../shared/types';
+
+const CANDLE_INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
 
 const SYMBOLS = [
   ['BTCUSDT', 'BTC', 100],
@@ -16,7 +17,7 @@ const SYMBOLS = [
   ['AVAXUSDT', 'AVAX', 18],
 ] as const;
 
-function candles(price: number, interval: CandleInterval) {
+function candles(price: number, interval: ScenarioCandleInterval) {
   const intervalIndex = CANDLE_INTERVALS.indexOf(interval);
   return Array.from({ length: 36 }, (_, index) => {
     const drift = (index - 18) * price * 0.0006;
@@ -78,7 +79,7 @@ function market(
     })),
     candles: Object.fromEntries(
       CANDLE_INTERVALS.map((interval) => [interval, candles(price, interval)]),
-    ) as Record<CandleInterval, unknown[][]>,
+    ) as Record<ScenarioCandleInterval, unknown[][]>,
   };
 }
 

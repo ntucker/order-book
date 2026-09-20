@@ -10,9 +10,9 @@ import { ResourceCatalogProvider } from '../resources/ResourceCatalog';
 import type { ScenarioBootstrap } from '../shared/types';
 import ScenarioConsole from '../ui/ScenarioConsole';
 import {
-  requireScenarioRuntime,
   ScenarioHydrationGate,
   ScenarioRuntimeProvider,
+  useRequiredScenarioRuntime,
 } from './ScenarioRuntime';
 
 function ScenarioDashboard({
@@ -22,7 +22,7 @@ function ScenarioDashboard({
   bootstrap: ScenarioBootstrap;
   symbol: string;
 }) {
-  const runtime = requireScenarioRuntime();
+  const runtime = useRequiredScenarioRuntime();
   const endpoints = useMemo(
     () => createScenarioEndpoints(bootstrap.origin, bootstrap.runId),
     [bootstrap.origin, bootstrap.runId],

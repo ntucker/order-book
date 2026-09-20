@@ -18,11 +18,13 @@ function scenarioFetchResponse(
   kind: ScenarioRequestKind,
 ) {
   return async (input: RequestInfo, init: RequestInit) => {
+    const requestOrigin =
+      typeof window === 'undefined' ? origin : window.location.origin;
     const original =
       typeof input === 'string' ? new URL(input) : new URL(input.url);
     const url = new URL(
       `/api/scenarios/${encodeURIComponent(runId)}/data/${kind}`,
-      origin,
+      requestOrigin,
     );
     url.search = original.search;
     const response = await fetch(url, {
