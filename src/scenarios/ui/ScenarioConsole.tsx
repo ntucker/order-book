@@ -1,0 +1,583 @@
+'use client';
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+
+import {
+  requireScenarioRuntime,
+} from '../client/ScenarioRuntime';
+import type {
+  CompiledMilestone,
+  EndpointDiff,
+  EntityDiff,
+  ScenarioEvent,
+  ValueDiff,
+} from '../shared/types';
+import styles from './ScenarioConsole.module.css';
+
+type Mode = 'manual' | 'auto';
+
+function formatValue(value: unknown): string {
+  if (value === undefined) return '—';
+  if (typeof value === 'string') return value;
+  try {
+    const text = JSON.stringify(value);
+    return text.length > 160 ? `${text.slice(0, 157)}…` : text;
+  } catch {
+    return String(value);
+  }
+}
+
+function milestoneEvents(events: ScenarioEvent[], milestoneId: string) {
+  return events.filter((event) => event.milestoneId === milestoneId);
+}
+
+function entityRows(diffs: EntityDiff[]) {
+  return diffs.flatMap((diff) =>
+    diff.changedFields.length
+      ? diff.changedFields.map((field) => ({
+          key: `${diff.entityKey}:${diff.pk}.${field.path.join('.')}`,
+          label: `${diff.entityKey}:${diff.pk} · ${field.path.join('.') || diff.change}`,
+          diff: field,
+        }))
+      : [
+          {
+            key: `${diff.entityKey}:${diff.pk}`,
+            label: `${diff.entityKey}:${diff.pk} · ${diff.change}`,
+            diff: {} as ValueDiff,
+          },
+        ],
+  );
+}
+
+function endpointRows(diffs: EndpointDiff[]) {
+  return diffs.flatMap((diff) => [
+    ...(diff.result
+      ? [
+          {
+            key: `${diff.endpointKey}:result`,
+            label: `${diff.endpointKey} · result`,
+            diff: diff.result,
+          },
+        ]
+      : []),
+    ...diff.meta.map((field) => ({
+      key: `${diff.endpointKey}:meta:${field.path.join('.')}`,
+      label: `${diff.endpointKey} · meta.${field.path.join('.')}`,
+      diff: field,
+    })),
+  ]);
+}
+
+function DiffTable({
+  entityDiffs,
+  endpointDiffs,
+}: {
+  entityDiffs: EntityDiff[];
+  endpointDiffs: EndpointDiff[];
+}) {
+  const rows = [...entityRows(entityDiffs), ...endpointRows(endpointDiffs)];
+  if (!rows.length) {
+    return <p className={styles.description}>No normalized values changed.</p>;
+  }
+  return (
+    <table className={styles.diffTable}>
+      <thead>
+        <tr>
+          <th>Record / path</th>
+          <th>Before</th>
+          <th>After</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key}>
+            <td className={styles.diffPath}>{row.label}</td>
+            <td className={styles.diffBefore}>
+              {formatValue(row.diff.before)}
+            </td>
+            <td className={styles.diffAfter}>
+              {formatValue(row.diff.after)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function EventInspector({
+  milestone,
+  events,
+  occurrenceIds,
+  pinnedOccurrence,
+  onPreview,
+  onPin,
+  onLocate,
+}: {
+  milestone?: CompiledMilestone;
+  events: ScenarioEvent[];
+  occurrenceIds: string[];
+  pinnedOccurrence: string | null;
+  onPreview: (ids: string[]) => void;
+  onPin: (id: string | null) => void;
+  onLocate: () => void;
+}) {
+  if (!milestone) {
+    return (
+      <div className={styles.empty}>
+        Select a milestone to inspect its causes and normalized store impact.
+      </div>
+    );
+  }
+  const entityDiffs = events.flatMap((event) => event.entityDiffs);
+  const endpointDiffs = events.flatMap((event) => event.endpointDiffs);
+  const causes = new Map<string, number>();
+  for (const event of events) {
+    const key = `${event.phase} · ${event.kind}`;
+    causes.set(key, (causes.get(key) ?? 0) + 1);
+  }
+  return (
+    <>
+      <div className={styles.inspectorHeader}>
+        <div>
+          <h3 className={styles.inspectorTitle}>{milestone.title}</h3>
+          <p className={styles.description}>{milestone.explanation}</p>
+        </div>
+        <span className={styles.status}>Step {milestone.cursor}</span>
+      </div>
+
+      <section className={styles.section}>
+        <h4 className={styles.sectionTitle}>Affected views</h4>
+        <div className={styles.chips}>
+          {occurrenceIds.length ? (
+            occurrenceIds.map((id) => (
+              <button
+                type="button"
+                key={id}
+                className={`${styles.chip} ${
+                  pinnedOccurrence === id ? styles.chipActive : ''
+                }`}
+                onMouseEnter={() => onPreview([id])}
+                onMouseLeave={() => onPreview([])}
+                onFocus={() => onPreview([id])}
+                onBlur={() => onPreview([])}
+                onClick={() =>
+                  onPin(pinnedOccurrence === id ? null : id)
+                }
+              >
+                {id}
+              </button>
+            ))
+          ) : (
+            <span className={styles.description}>No registered view changes</span>
+          )}
+          {occurrenceIds.length ? (
+            <button type="button" className={styles.chip} onClick={onLocate}>
+              Locate ({occurrenceIds.length})
+            </button>
+          ) : null}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h4 className={styles.sectionTitle}>Causes</h4>
+        <div className={styles.chips}>
+          {[...causes].map(([label, count]) => (
+            <span className={styles.chip} key={label}>
+              {label} ×{count}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h4 className={styles.sectionTitle}>Normalized store diff</h4>
+        <DiffTable entityDiffs={entityDiffs} endpointDiffs={endpointDiffs} />
+      </section>
+    </>
+  );
+}
+
+export default function ScenarioConsole() {
+  const runtime = requireScenarioRuntime();
+  const snapshot = useSyncExternalStore(
+    runtime.subscribe,
+    runtime.getSnapshot,
+    runtime.getSnapshot,
+  );
+  const [mode, setMode] = useState<Mode>('manual');
+  const [interval, setIntervalMs] = useState(2000);
+  const [playing, setPlaying] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [selectedId, setSelectedId] = useState<string>();
+  const [previewIds, setPreviewIds] = useState<string[]>([]);
+  const [pinnedOccurrence, setPinnedOccurrence] = useState<string | null>(null);
+  const [locateIndex, setLocateIndex] = useState(-1);
+  const consoleRef = useRef<HTMLElement>(null);
+
+  const milestones = runtime.bootstrap.milestones;
+  const selected = milestones.find((item) => item.id === selectedId);
+  const selectedEvents = selected
+    ? milestoneEvents(snapshot.events, selected.id)
+    : [];
+  const occurrenceIds = useMemo(
+    () =>
+      [...new Set(selectedEvents.flatMap((event) => event.occurrenceIds))],
+    [selectedEvents],
+  );
+  const complete = snapshot.cursor >= milestones.length;
+
+  const advanceOne = useCallback(async () => {
+    if (busy || complete) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await runtime.advance();
+      setSelectedId(result.milestone.id);
+      await runtime.waitForCompletion(result.milestone.completesWhen);
+      runtime.recordClientEvent({
+        milestoneId: result.milestone.id,
+        kind: 'visible',
+        source: 'ScenarioRunner',
+        summary: `${result.milestone.title} visibly completed`,
+      });
+      await runtime.refresh();
+    } catch (caught) {
+      setPlaying(false);
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, complete, runtime]);
+
+  useEffect(() => {
+    if (mode !== 'auto' || !playing || busy || complete) return;
+    const timer = window.setTimeout(() => void advanceOne(), interval);
+    return () => window.clearTimeout(timer);
+  }, [advanceOne, busy, complete, interval, mode, playing, snapshot.cursor]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  useEffect(() => {
+    const activeIds =
+      pinnedOccurrence
+        ? [pinnedOccurrence]
+        : previewIds.length
+          ? previewIds
+          : selected
+            ? occurrenceIds
+            : [];
+    for (const occurrence of snapshot.occurrences) {
+      delete occurrence.element.dataset.scenarioHighlight;
+      delete occurrence.element.dataset.scenarioIndex;
+    }
+    activeIds.forEach((id, index) => {
+      const occurrence = snapshot.occurrences.find(
+        (candidate) => candidate.occurrenceId === id,
+      );
+      if (!occurrence) return;
+      occurrence.element.dataset.scenarioHighlight =
+        pinnedOccurrence === id ? 'pinned' : 'preview';
+      if (pinnedOccurrence === id) {
+        occurrence.element.dataset.scenarioIndex = String(index + 1);
+      }
+    });
+  }, [
+    occurrenceIds,
+    pinnedOccurrence,
+    previewIds,
+    selected,
+    snapshot.occurrences,
+  ]);
+
+  const locate = useCallback(() => {
+    if (!occurrenceIds.length) return;
+    const next = (locateIndex + 1) % occurrenceIds.length;
+    const id = occurrenceIds[next];
+    setLocateIndex(next);
+    setPinnedOccurrence(id);
+    const occurrence = snapshot.occurrences.find(
+      (candidate) => candidate.occurrenceId === id,
+    );
+    occurrence?.element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, [locateIndex, occurrenceIds, snapshot.occurrences]);
+
+  useEffect(() => {
+    const element = consoleRef.current;
+    if (!element) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.matches('input, select, button, textarea')) return;
+      const selectedIndex = milestones.findIndex(
+        (milestone) => milestone.id === selectedId,
+      );
+      if (event.key.toLowerCase() === 'n' && mode === 'manual') {
+        event.preventDefault();
+        void advanceOne();
+      } else if (event.key.toLowerCase() === 'p' && mode === 'auto') {
+        event.preventDefault();
+        setPlaying((value) => !value);
+      } else if (event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        setSelectedId(
+          milestones[Math.min(milestones.length - 1, selectedIndex + 1)]?.id,
+        );
+      } else if (event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSelectedId(milestones[Math.max(0, selectedIndex - 1)]?.id);
+      } else if (event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        locate();
+      } else if (event.key === 'Escape') {
+        if (pinnedOccurrence) setPinnedOccurrence(null);
+        else setSelectedId(undefined);
+      }
+    };
+    element.addEventListener('keydown', onKeyDown);
+    return () => element.removeEventListener('keydown', onKeyDown);
+  }, [
+    advanceOne,
+    locate,
+    milestones,
+    mode,
+    pinnedOccurrence,
+    selectedId,
+  ]);
+
+  const restart = () => {
+    const runId = crypto.randomUUID();
+    window.location.assign(
+      `/scenarios/${runtime.bootstrap.scenarioId}/${runId}/${runtime.bootstrap.initialSymbol}`,
+    );
+  };
+
+  const statusLabel =
+    error
+      ? 'Failed'
+      : complete
+        ? 'Complete'
+        : busy
+          ? 'Advancing'
+          : mode === 'manual'
+            ? 'Time stopped'
+            : playing
+              ? 'Running'
+              : 'Paused';
+
+  return (
+    <section
+      ref={consoleRef}
+      className={styles.console}
+      aria-label="Scenario runner"
+      aria-keyshortcuts="N P J K L Escape"
+      tabIndex={-1}
+    >
+      <header className={styles.toolbar}>
+        <div className={styles.identity}>
+          <div className={styles.titleBlock}>
+            <span className={styles.eyebrow}>Deterministic scenario</span>
+            <strong className={styles.title}>
+              {
+                milestones[0]
+                  ? runtime.bootstrap.scenarioId.replaceAll('-', ' ')
+                  : 'No scenario'
+              }
+            </strong>
+          </div>
+          <span className={styles.status}>{statusLabel}</span>
+          <span
+            className={styles.progress}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={milestones.length}
+            aria-valuenow={snapshot.cursor}
+          >
+            {snapshot.cursor} / {milestones.length}
+          </span>
+        </div>
+
+        <div className={styles.controls}>
+          <div className={styles.mode} aria-label="Playback mode">
+            <label>
+              <input
+                type="radio"
+                name="scenario-mode"
+                value="auto"
+                checked={mode === 'auto'}
+                onChange={() => setMode('auto')}
+              />
+              Auto
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="scenario-mode"
+                value="manual"
+                checked={mode === 'manual'}
+                onChange={() => {
+                  setMode('manual');
+                  setPlaying(false);
+                }}
+              />
+              Manual · time stop
+            </label>
+          </div>
+          <select
+            className={styles.select}
+            aria-label="Milestone interval"
+            value={interval}
+            disabled={mode === 'manual'}
+            onChange={(event) => setIntervalMs(Number(event.target.value))}
+          >
+            <option value={1000}>Every 1s</option>
+            <option value={2000}>Every 2s</option>
+            <option value={3000}>Every 3s</option>
+            <option value={5000}>Every 5s</option>
+          </select>
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.primary}
+              disabled={mode === 'manual' || complete}
+              onClick={() => setPlaying((value) => !value)}
+            >
+              {playing ? 'Pause' : snapshot.cursor ? 'Resume' : 'Start'}
+            </button>
+            <button
+              type="button"
+              className={styles.button}
+              disabled={mode !== 'manual' || busy || complete}
+              onClick={() => void advanceOne()}
+            >
+              Advance 1 milestone
+            </button>
+            <button
+              type="button"
+              className={styles.button}
+              disabled={snapshot.cursor === 0}
+              onClick={restart}
+            >
+              Restart
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {error ? <p className={styles.error}>{error}</p> : null}
+
+      <div className={styles.body}>
+        <div className={styles.ledger}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.step}>Step / time</th>
+                <th>Event</th>
+                <th className={styles.storeColumn}>Store</th>
+                <th className={styles.impactColumn}>Visible impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              {milestones.map((milestone) => {
+                const events = milestoneEvents(snapshot.events, milestone.id);
+                const completed = snapshot.cursor >= milestone.cursor;
+                const rowOccurrenceIds = [
+                  ...new Set(events.flatMap((event) => event.occurrenceIds)),
+                ];
+                return (
+                  <tr
+                    key={milestone.id}
+                    className={`${styles.row} ${
+                      selectedId === milestone.id ? styles.rowSelected : ''
+                    } ${!completed ? styles.rowUpcoming : ''}`}
+                    onMouseEnter={() => setPreviewIds(rowOccurrenceIds)}
+                    onMouseLeave={() => setPreviewIds([])}
+                  >
+                    <td className={styles.step}>
+                      <span className={styles.stepMarker}>
+                        {completed ? '◆' : '◇'}
+                      </span>
+                      {String(milestone.cursor).padStart(2, '0')}
+                      <span className={styles.eventMeta}>
+                        {((milestone.cursor * interval) / 1000).toFixed(1)}s
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.eventButton}
+                        aria-pressed={selectedId === milestone.id}
+                        onClick={() => {
+                          setSelectedId(milestone.id);
+                          setPinnedOccurrence(null);
+                        }}
+                      >
+                        <span className={styles.eventTitle}>
+                          {milestone.title}
+                        </span>
+                        <span className={styles.eventMeta}>
+                          {events.length} causal events · {milestone.id}
+                        </span>
+                        <span
+                          className={`${styles.eventMeta} ${styles.mobileStore}`}
+                        >
+                          {[
+                            ...(milestone.storeSummary ?? []),
+                            ...(milestone.visibleSummary ?? []),
+                          ].join(' · ')}
+                        </span>
+                      </button>
+                    </td>
+                    <td className={styles.storeColumn}>
+                      <span className={styles.cellSummary}>
+                        {milestone.storeSummary?.slice(0, 2).join(' · ') ?? '—'}
+                      </span>
+                    </td>
+                    <td className={styles.impactColumn}>
+                      <span className={styles.cellSummary}>
+                        {milestone.visibleSummary?.slice(0, 2).join(' · ') ??
+                          '—'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <aside className={styles.inspector} aria-label="Event inspector">
+          <EventInspector
+            milestone={selected}
+            events={selectedEvents}
+            occurrenceIds={occurrenceIds}
+            pinnedOccurrence={pinnedOccurrence}
+            onPreview={setPreviewIds}
+            onPin={setPinnedOccurrence}
+            onLocate={locate}
+          />
+        </aside>
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {selected && snapshot.cursor >= selected.cursor
+          ? `${selected.title} completed`
+          : ''}
+      </span>
+    </section>
+  );
+}

@@ -18,17 +18,20 @@ import TickerHeader from '../ticker/TickerHeader';
 import TradesPanel from '../trades/TradesPanel';
 import Segmented from '../ui/Segmented';
 import Watchlist from '../watchlist/Watchlist';
+import { ScenarioPanelGate } from '@/scenarios/client/ScenarioRuntime';
 import styles from './Dashboard.module.css';
 
 type MobilePane = 'book' | 'chart' | 'trades';
 
 function Bound({
   id,
+  panelId,
   kind,
   title,
   children,
 }: {
   id: string;
+  panelId: string;
   kind: 'book' | 'trades' | 'chart' | 'ticker' | 'watch';
   title: string;
   children: ReactNode;
@@ -39,42 +42,53 @@ function Bound({
       fallback={<PanelSkeleton kind={kind} title={title} />}
       errorComponent={PanelError}
     >
+      <ScenarioPanelGate panelId={panelId} />
       {children}
     </AsyncBoundary>
   );
 }
 
-export default function Dashboard({ symbol }: { symbol: string }) {
+export default function Dashboard({
+  symbol,
+  scenarioPath,
+}: {
+  symbol: string;
+  scenarioPath?: { scenarioId: string; runId: string };
+}) {
   const [pane, setPane] = useState<MobilePane>('book');
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [pendingSymbol, setPendingSymbol] = useOptimistic<string | null>(null);
+  const hrefForSymbol = (next: string) =>
+    scenarioPath
+      ? `/scenarios/${scenarioPath.scenarioId}/${scenarioPath.runId}/${next}`
+      : `/${next}`;
 
   const navigate = (next: string) => {
     if (next === symbol) return;
     startTransition(() => {
       setPendingSymbol(next);
-      router.push(`/${next}`);
+      router.push(hrefForSymbol(next));
     });
   };
 
   const book = (
-    <Bound id={`${symbol}-book`} kind="book" title="Order Book">
+    <Bound id={`${symbol}-book`} panelId="book" kind="book" title="Order Book">
       <OrderBookPanel symbol={symbol} />
     </Bound>
   );
   const chart = (
-    <Bound id={`${symbol}-chart`} kind="chart" title="Chart">
+    <Bound id={`${symbol}-chart`} panelId="chart" kind="chart" title="Chart">
       <CandleChartPanel symbol={symbol} />
     </Bound>
   );
   const depth = (
-    <Bound id={`${symbol}-depth`} kind="chart" title="Depth">
+    <Bound id={`${symbol}-depth`} panelId="depth" kind="chart" title="Depth">
       <DepthChart symbol={symbol} />
     </Bound>
   );
   const trades = (
-    <Bound id={`${symbol}-trades`} kind="trades" title="Trades">
+    <Bound id={`${symbol}-trades`} panelId="trades" kind="trades" title="Trades">
       <TradesPanel symbol={symbol} />
     </Bound>
   );
@@ -86,26 +100,43 @@ export default function Dashboard({ symbol }: { symbol: string }) {
       aria-busy={Boolean(pendingSymbol)}
     >
       <div className={styles.watch}>
-        <Bound id={`${symbol}-watch`} kind="watch" title="Markets">
+        <Bound
+          id={`${symbol}-watch`}
+          panelId="watch"
+          kind="watch"
+          title="Markets"
+        >
           <Watchlist
             current={symbol}
             onNavigate={navigate}
             pendingSymbol={pendingSymbol}
+            hrefForSymbol={hrefForSymbol}
           />
         </Bound>
       </div>
       <div className={styles.chips}>
-        <Bound id={`${symbol}-chips`} kind="watch" title="Markets">
+        <Bound
+          id={`${symbol}-chips`}
+          panelId="watch"
+          kind="watch"
+          title="Markets"
+        >
           <Watchlist
             current={symbol}
             variant="chips"
             onNavigate={navigate}
             pendingSymbol={pendingSymbol}
+            hrefForSymbol={hrefForSymbol}
           />
         </Bound>
       </div>
       <div className={styles.ticker}>
-        <Bound id={`${symbol}-ticker`} kind="ticker" title="Ticker">
+        <Bound
+          id={`${symbol}-ticker`}
+          panelId="ticker"
+          kind="ticker"
+          title="Ticker"
+        >
           <TickerHeader symbol={symbol} />
         </Bound>
       </div>

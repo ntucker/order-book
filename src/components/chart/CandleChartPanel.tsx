@@ -2,14 +2,14 @@
 
 import { useLive, useSuspense } from '@data-client/react';
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   CANDLE_INTERVALS,
-  getCandles,
-  getSymbolInfo,
   type CandleInterval,
 } from '@/resources';
+import { useScenarioOccurrence } from '@/scenarios/client/ScenarioRuntime';
+import { useMarketDataEndpoints } from '@/scenarios/resources/ResourceCatalog';
 
 import Panel from '../panel/Panel';
 import skeleton from '../panel/PanelSkeleton.module.css';
@@ -21,9 +21,18 @@ const CandleChart = dynamic(() => import('./CandleChart'), {
 });
 
 export default function CandleChartPanel({ symbol }: { symbol: string }) {
+  const { getCandles, getSymbolInfo } = useMarketDataEndpoints();
   const info = useSuspense(getSymbolInfo, { symbol });
   const [interval, setInterval] = useState<CandleInterval>('1m');
   const series = useLive(getCandles, { symbol, interval });
+  const chartRef = useRef<HTMLDivElement>(null);
+  useScenarioOccurrence(chartRef, {
+    occurrenceId: 'chart-panel',
+    viewId: 'candle-chart',
+    label: 'Candle chart',
+    entityPaths: [{ key: 'Candles', pk: `${symbol}:${interval}` }],
+    mobilePane: 'chart',
+  });
 
   return (
     <Panel
@@ -41,7 +50,9 @@ export default function CandleChartPanel({ symbol }: { symbol: string }) {
         />
       }
     >
-      <CandleChart candles={series.candles} />
+      <div ref={chartRef} style={{ height: '100%' }}>
+        <CandleChart candles={series.candles} />
+      </div>
     </Panel>
   );
 }

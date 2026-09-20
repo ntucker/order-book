@@ -1,21 +1,34 @@
 'use client';
 
 import { useLive, useSuspense } from '@data-client/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   formatCompact,
   formatNumber,
   formatSignedPercent,
 } from '@/lib/format';
-import { getSymbolInfo, getTicker } from '@/resources';
+import {
+  useMarketDataEndpoints,
+} from '@/scenarios/resources/ResourceCatalog';
+import {
+  useScenarioOccurrence,
+} from '@/scenarios/client/ScenarioRuntime';
 
 import Triangle from '../ui/Triangle';
 import styles from './TickerHeader.module.css';
 
 export default function TickerHeader({ symbol }: { symbol: string }) {
+  const { getSymbolInfo, getTicker } = useMarketDataEndpoints();
   const info = useSuspense(getSymbolInfo, { symbol });
   const ticker = useLive(getTicker, { symbol });
+  const priceRef = useRef<HTMLDivElement>(null);
+  useScenarioOccurrence(priceRef, {
+    occurrenceId: 'ticker-header-price',
+    viewId: 'ticker-header',
+    label: 'Ticker header price',
+    entityPaths: [{ key: 'Ticker', pk: symbol }],
+  });
   const dirClass =
     ticker.direction === 'up'
       ? styles.bid
@@ -40,7 +53,7 @@ export default function TickerHeader({ symbol }: { symbol: string }) {
         <span className={styles.base}>{info.baseAsset}</span>
         <span className={styles.quote}>/{info.quoteAsset}</span>
       </div>
-      <div className={`${styles.price} ${dirClass}`}>
+      <div ref={priceRef} className={`${styles.price} ${dirClass}`}>
         <Triangle direction={ticker.direction} />
         {price}
       </div>

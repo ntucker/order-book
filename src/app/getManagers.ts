@@ -11,10 +11,13 @@ import {
   Ticker,
   TradeFeed,
 } from '@/resources';
+import { EventLedgerManager } from '@/scenarios/client/EventLedgerManager';
+import type { ScenarioRuntime } from '@/scenarios/client/ScenarioRuntime';
+import { ScenarioStreamManager } from '@/scenarios/client/ScenarioStreamManager';
 
 const streamed = new Set([OrderBook, Ticker, TradeFeed, Candles, Connection]);
 
-export default function getManagers() {
+export default function getManagers(runtime?: ScenarioRuntime) {
   const managers = getDefaultManagers({
     devToolsManager: {
       latency: 1000,
@@ -23,7 +26,12 @@ export default function getManagers() {
     },
   });
   if (typeof window !== 'undefined') {
-    managers.unshift(new BinanceStreamManager(BINANCE_WS));
+    if (runtime) {
+      managers.unshift(new ScenarioStreamManager(runtime));
+      managers.unshift(new EventLedgerManager(runtime));
+    } else {
+      managers.unshift(new BinanceStreamManager(BINANCE_WS));
+    }
   }
   return managers;
 }
