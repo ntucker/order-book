@@ -126,17 +126,25 @@ export class ScenarioRuntime {
   }
 
   async refresh(): Promise<void> {
-    const response = await fetch(
-      `/api/scenarios/${encodeURIComponent(this.bootstrap.runId)}`,
-      { cache: 'no-store' },
-    );
-    if (!response.ok) return;
-    const status = (await response.json()) as ScenarioStatus;
-    this.snapshotValue = {
-      ...this.snapshotValue,
-      events: this.mergeEvents(this.snapshotValue.events, status.events),
-    };
-    this.emit();
+    const abort = new AbortController();
+    const timer = window.setTimeout(() => abort.abort(), 250);
+    try {
+      const response = await fetch(
+        `/api/scenarios/${encodeURIComponent(this.bootstrap.runId)}`,
+        { cache: 'no-store', signal: abort.signal },
+      );
+      if (!response.ok) return;
+      const status = (await response.json()) as ScenarioStatus;
+      this.snapshotValue = {
+        ...this.snapshotValue,
+        events: this.mergeEvents(this.snapshotValue.events, status.events),
+      };
+      this.emit();
+    } catch {
+      // Abort or a full HTTP/1.1 connection pool must not freeze CompletesWhen.
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   async waitForCompletion(predicate: CompletionPredicate): Promise<void> {
@@ -145,7 +153,8 @@ export class ScenarioRuntime {
         await afterPaint();
         return;
       case 'dashboard-hydrated':
-        await this.waitUntil(() => this.snapshotValue.hydrated);
+        await this.hydrationPromise;
+        this.markHydrated();
         await afterPaint();
         return;
       case 'panel-visible':

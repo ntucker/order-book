@@ -37,7 +37,7 @@ async function openRun(page: Page, scenarioId: string) {
 async function advance(page: Page, step: number, total: number) {
   const button = page.getByRole('button', { name: 'Advance 1 milestone' });
   await expect(button).toBeEnabled();
-  await button.click({ force: true });
+  await button.evaluate((element: HTMLButtonElement) => element.click());
   await expect(page.getByRole('progressbar')).toHaveText(`${step} / ${total}`);
 }
 
