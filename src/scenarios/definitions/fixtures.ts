@@ -83,25 +83,25 @@ function market(
   };
 }
 
-export function baseFixtures(): ScenarioFixtures {
-  const markets = Object.fromEntries(
-    SYMBOLS.map(([symbol, baseAsset, price]) => [
-      symbol,
-      market(symbol, baseAsset, price),
-    ]),
-  );
-  return {
-    markets,
-    watchlist: SYMBOLS.map(([symbol]) => symbol),
-    responseGates: {
-      'symbol-info': 'response:symbol-info',
-      ticker: 'response:ticker',
-      tickers: 'response:tickers',
-      book: 'response:book',
-      trades: 'response:trades',
-      candles: 'response:candles',
-    },
-    streamEvents: {
+const markets = Object.fromEntries(
+  SYMBOLS.map(([symbol, baseAsset, price]) => [
+    symbol,
+    market(symbol, baseAsset, price),
+  ]),
+);
+
+export const baseFixtures: ScenarioFixtures = {
+  markets,
+  watchlist: SYMBOLS.map(([symbol]) => symbol),
+  responseGates: {
+    'symbol-info': 'response:symbol-info',
+    ticker: 'response:ticker',
+    tickers: 'response:tickers',
+    book: 'response:book',
+    trades: 'response:trades',
+    candles: 'response:candles',
+  },
+  streamEvents: {
       'ticker-newer': {
         stream: 'btcusdt@miniTicker',
         data: {
@@ -156,6 +156,5 @@ export function baseFixtures(): ScenarioFixtures {
           'book-mid-price',
         ],
       },
-    },
-  };
-}
+  },
+};

@@ -31,20 +31,10 @@ type Occurrence = ScenarioOccurrenceDescriptor & { element: HTMLElement };
 
 type RuntimeSnapshot = {
   cursor: number;
-  revision: number;
-  status: ScenarioStatus['status'];
   events: ScenarioEvent[];
   hydrated: boolean;
   occurrences: Occurrence[];
 };
-
-function deferred() {
-  let resolve!: () => void;
-  const promise = new Promise<void>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
 
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -66,7 +56,7 @@ export class ScenarioRuntime {
 
   constructor(bootstrap: ScenarioBootstrap) {
     this.bootstrap = bootstrap;
-    const hydration = deferred();
+    const hydration = Promise.withResolvers<void>();
     this.hydrationPromise = hydration.promise;
     this.resolveHydration = hydration.resolve;
     const hydrationReleased = bootstrap.milestones
@@ -79,8 +69,6 @@ export class ScenarioRuntime {
     if (hydrationReleased) hydration.resolve();
     this.snapshotValue = {
       cursor: bootstrap.cursor,
-      revision: bootstrap.revision,
-      status: bootstrap.status,
       events: bootstrap.events,
       hydrated: false,
       occurrences: [],
@@ -118,8 +106,6 @@ export class ScenarioRuntime {
     this.snapshotValue = {
       ...this.snapshotValue,
       cursor: result.cursor,
-      revision: result.revision,
-      status: result.status === 'complete' ? 'complete' : 'running',
       events: this.mergeEvents(this.snapshotValue.events, result.events),
     };
     this.emit();
@@ -136,7 +122,6 @@ export class ScenarioRuntime {
     const status = (await response.json()) as ScenarioStatus;
     this.snapshotValue = {
       ...this.snapshotValue,
-      revision: Math.max(this.snapshotValue.revision, status.revision),
       events: this.mergeEvents(this.snapshotValue.events, status.events),
     };
     this.emit();
@@ -175,7 +160,6 @@ export class ScenarioRuntime {
     if (this.snapshotValue.hydrated) return;
     this.snapshotValue = { ...this.snapshotValue, hydrated: true };
     this.recordClientEvent({
-      milestoneId: this.currentMilestoneId(),
       kind: 'visible',
       source: 'React',
       summary: 'Dashboard hydration committed',
@@ -185,7 +169,7 @@ export class ScenarioRuntime {
   recordClientEvent(
     event: Pick<
       ScenarioEvent,
-      'milestoneId' | 'kind' | 'source' | 'summary'
+      'kind' | 'source' | 'summary'
     > &
       Partial<
         Pick<
@@ -199,6 +183,7 @@ export class ScenarioRuntime {
       id: `${this.bootstrap.runId}:client:${sequence}`,
       sequence: 1_000_000 + sequence,
       phase: 'client',
+      milestoneId: this.currentMilestoneId(),
       entityDiffs: [],
       endpointDiffs: [],
       occurrenceIds: [],
@@ -427,7 +412,6 @@ export function useScenarioOccurrence(
     const element = ref.current;
     if (!runtime || !element) return;
     const current = readDescriptor();
-    element.dataset.scenarioOccurrence = current.occurrenceId;
     return runtime.registerOccurrence(current, element);
   }, [descriptorKey, ref, runtime]);
 }

@@ -36,10 +36,7 @@ export default function DepthChart({ symbol }: { symbol: string }) {
   const [ref, size] = useElementSize<HTMLDivElement>();
   useScenarioOccurrence(ref, {
     occurrenceId: 'depth-panel',
-    viewId: 'depth-chart',
-    label: 'Depth chart',
     entityPaths: [{ key: 'OrderBook', pk: symbol }],
-    mobilePane: 'chart',
   });
   const [hover, setHover] = useState<{
     x: number;

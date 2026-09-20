@@ -25,8 +25,6 @@ export default function TickerHeader({ symbol }: { symbol: string }) {
   const priceRef = useRef<HTMLDivElement>(null);
   useScenarioOccurrence(priceRef, {
     occurrenceId: 'ticker-header-price',
-    viewId: 'ticker-header',
-    label: 'Ticker header price',
     entityPaths: [{ key: 'Ticker', pk: symbol }],
   });
   const dirClass =

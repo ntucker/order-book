@@ -25,10 +25,6 @@ export class EventLedgerManager implements Manager {
   middleware: Middleware = (controller) => (next) => async (action) => {
     const before = controller.getState() as State<unknown>;
     this.runtime.recordClientEvent({
-      milestoneId:
-        this.runtime.bootstrap.milestones[
-          Math.max(0, this.runtime.getSnapshot().cursor - 1)
-        ]?.id ?? 'bootstrap',
       kind: 'action-dispatched',
       source: actionSource(action),
       summary: action.type,
@@ -49,10 +45,6 @@ export class EventLedgerManager implements Manager {
         )
         .map((occurrence) => occurrence.occurrenceId);
       this.runtime.recordClientEvent({
-        milestoneId:
-          this.runtime.bootstrap.milestones[
-            Math.max(0, this.runtime.getSnapshot().cursor - 1)
-          ]?.id ?? 'bootstrap',
         kind: 'store-committed',
         source: actionSource(action),
         summary: `${entityDiffs.length} entities · ${endpointDiffs.length} endpoints`,

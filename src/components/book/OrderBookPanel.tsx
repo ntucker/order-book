@@ -113,20 +113,14 @@ export default function OrderBookPanel({ symbol }: { symbol: string }) {
   const midRef = useRef<HTMLSpanElement>(null);
   useScenarioOccurrence(bodyRef, {
     occurrenceId: 'book-panel',
-    viewId: 'order-book',
-    label: 'Order Book panel',
     entityPaths: [{ key: 'OrderBook', pk: symbol }],
-    mobilePane: 'book',
   });
   useScenarioOccurrence(midRef, {
     occurrenceId: 'book-mid-price',
-    viewId: 'order-book',
-    label: 'Order Book mid price',
     entityPaths: [
       { key: 'OrderBook', pk: symbol },
       { key: 'Ticker', pk: symbol },
     ],
-    mobilePane: 'book',
   });
 
   const tick = info.tickSize * Number(groupMult);

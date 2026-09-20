@@ -135,10 +135,6 @@ export class ScenarioStreamManager implements Manager {
       );
     }
     this.runtime.recordClientEvent({
-      milestoneId:
-        this.runtime.bootstrap.milestones[
-          Math.max(0, this.runtime.getSnapshot().cursor - 1)
-        ]?.id ?? 'bootstrap',
       kind: 'command',
       source: command.event.stream,
       summary: `Applied scripted event ${command.eventId}`,

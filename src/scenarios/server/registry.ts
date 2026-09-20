@@ -11,7 +11,6 @@ const PRUNE_INTERVAL_MS = 60 * 1000;
 const MAX_SESSIONS = 100;
 
 type Registry = {
-  generation: number;
   sessions: Map<string, ScenarioSession>;
   pruneTimer?: ReturnType<typeof setInterval>;
 };
@@ -23,7 +22,6 @@ function registry(): Registry {
   let reg = root[REGISTRY];
   if (!reg) {
     reg = {
-      generation: 0,
       sessions: new Map(),
     };
     root[REGISTRY] = reg;
@@ -76,7 +74,7 @@ export function getOrCreateScenarioSession(
   }
   const scenario = compileScenario(getScenarioDefinition(scenarioId));
   enforceCapacity(reg);
-  const session = new ScenarioSession(runId, scenario, ++reg.generation);
+  const session = new ScenarioSession(runId, scenario);
   reg.sessions.set(runId, session);
   return session;
 }

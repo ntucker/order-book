@@ -7,7 +7,7 @@ export const symbolTransitionScenario: ScenarioDefinition = {
   summary:
     'BTC stays visible and live while ETH prepares, then the dashboard swaps as one committed transition.',
   initialSymbol: 'BTCUSDT',
-  fixtures: baseFixtures(),
+  fixtures: baseFixtures,
   milestones: [
     {
       id: 'btc-visible',

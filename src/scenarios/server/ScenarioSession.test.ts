@@ -11,7 +11,6 @@ function makeSession() {
   return new ScenarioSession(
     'test-run',
     compileScenario(streamedRevealScenario),
-    1,
   );
 }
 

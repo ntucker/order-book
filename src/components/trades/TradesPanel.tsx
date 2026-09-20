@@ -54,10 +54,7 @@ export default function TradesPanel({ symbol }: { symbol: string }) {
   const [bodyRef, size] = useElementSize<HTMLDivElement>();
   useScenarioOccurrence(bodyRef, {
     occurrenceId: 'trades-panel',
-    viewId: 'trades',
-    label: 'Recent trades',
     entityPaths: [{ key: 'TradeFeed', pk: symbol }],
-    mobilePane: 'trades',
   });
   const seen = useRef(new Set<number>());
   const primed = useRef(false);

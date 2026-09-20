@@ -7,7 +7,7 @@ export const streamedRevealScenario: ScenarioDefinition = {
   summary:
     'Watch the shell, independent panels, hydration, and the first live update arrive as distinct teaching beats.',
   initialSymbol: 'BTCUSDT',
-  fixtures: baseFixtures(),
+  fixtures: baseFixtures,
   milestones: [
     {
       id: 'markets-visible',

@@ -470,9 +470,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .row,
-  .chip {
-    transition: none;
-  }
-}

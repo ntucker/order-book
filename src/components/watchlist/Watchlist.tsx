@@ -45,8 +45,6 @@ function Row({
         : ticker.symbol === 'BTCUSDT'
           ? 'watchlist-btc-price'
           : `watchlist-${ticker.symbol.toLowerCase()}-${variant}`,
-    viewId: variant === 'chip' ? 'watchlist-chips' : 'watchlist',
-    label: `${ticker.symbol} watchlist price`,
     entityPaths: [{ key: 'Ticker', pk: ticker.symbol }],
   });
   const [base, quote] = splitSymbol(ticker.symbol);

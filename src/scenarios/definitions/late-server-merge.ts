@@ -7,7 +7,7 @@ export const lateServerMergeScenario: ScenarioDefinition = {
   summary:
     'See an older update arrive after newer live data without regressing the normalized store or visible prices.',
   initialSymbol: 'BTCUSDT',
-  fixtures: baseFixtures(),
+  fixtures: baseFixtures,
   milestones: [
     {
       id: 'dashboard-visible',

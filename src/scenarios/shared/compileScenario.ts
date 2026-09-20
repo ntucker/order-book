@@ -50,7 +50,7 @@ export function compileScenario(
   });
 
   for (const gateId of Object.values(definition.fixtures.responseGates)) {
-    if (gateId && !gateOwners[gateId] && !definition.initialReleases?.includes(gateId)) {
+    if (gateId && !gateOwners[gateId]) {
       throw new Error(`Response gate "${gateId}" is never released`);
     }
   }

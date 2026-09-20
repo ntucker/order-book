@@ -28,10 +28,7 @@ export default function CandleChartPanel({ symbol }: { symbol: string }) {
   const chartRef = useRef<HTMLDivElement>(null);
   useScenarioOccurrence(chartRef, {
     occurrenceId: 'chart-panel',
-    viewId: 'candle-chart',
-    label: 'Candle chart',
     entityPaths: [{ key: 'Candles', pk: `${symbol}:${interval}` }],
-    mobilePane: 'chart',
   });
 
   return (

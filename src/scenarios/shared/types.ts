@@ -19,7 +19,6 @@ export type ScenarioEventKind =
   | 'response-released'
   | 'action-dispatched'
   | 'store-committed'
-  | 'react-committed'
   | 'visible'
   | 'command';
 
@@ -113,7 +112,6 @@ export interface ScenarioDefinition {
   title: string;
   summary: string;
   initialSymbol: string;
-  initialReleases?: string[];
   fixtures: ScenarioFixtures;
   milestones: ScenarioMilestoneDefinition[];
 }
@@ -140,21 +138,15 @@ export interface AdvanceCommand {
 
 export interface AdvanceResult {
   cursor: number;
-  revision: number;
   milestone: CompiledMilestone;
-  releasedGateIds: string[];
   clientCommands: ClientScenarioCommand[];
   events: ScenarioEvent[];
-  status: 'running' | 'complete' | 'failed';
 }
 
 export interface ScenarioStatus {
   runId: string;
   scenarioId: string;
-  generation: number;
   cursor: number;
-  revision: number;
-  status: 'ready' | 'running' | 'complete' | 'failed';
   milestones: CompiledMilestone[];
   events: ScenarioEvent[];
 }
@@ -166,8 +158,5 @@ export interface ScenarioBootstrap extends ScenarioStatus {
 
 export interface ScenarioOccurrenceDescriptor {
   occurrenceId: string;
-  viewId: string;
-  label: string;
   entityPaths: { key: string; pk: string }[];
-  mobilePane?: 'book' | 'chart' | 'trades';
 }

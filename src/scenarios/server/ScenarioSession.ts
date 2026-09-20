@@ -22,9 +22,7 @@ export class StaleScenarioCursorError extends Error {}
 export class ScenarioSession {
   readonly runId: string;
   readonly scenario: CompiledScenario;
-  readonly generation: number;
   cursor = 0;
-  revision = 0;
   lastTouched = Date.now();
   private sequence = 0;
   private released = new Set<string>();
@@ -33,13 +31,9 @@ export class ScenarioSession {
   private commands = new Map<string, AdvanceResult>();
   private disposed = false;
 
-  constructor(runId: string, scenario: CompiledScenario, generation: number) {
+  constructor(runId: string, scenario: CompiledScenario) {
     this.runId = runId;
     this.scenario = scenario;
-    this.generation = generation;
-    for (const gateId of scenario.initialReleases ?? []) {
-      this.released.add(gateId);
-    }
   }
 
   waitForGate(gateId: string, signal?: AbortSignal): Promise<void> {
@@ -83,14 +77,12 @@ export class ScenarioSession {
       throw new StaleScenarioCursorError('Scenario is already complete');
     }
 
-    const releasedGateIds: string[] = [];
     const clientCommands: ClientScenarioCommand[] = [];
     for (const release of milestone.releases) {
       switch (release.kind) {
         case 'response':
         case 'panel':
           this.releaseGate(release.gateId);
-          releasedGateIds.push(release.gateId);
           break;
         case 'hydrate-dashboard':
           clientCommands.push({ kind: 'hydrate-dashboard' });
@@ -111,7 +103,6 @@ export class ScenarioSession {
     }
 
     this.cursor += 1;
-    this.revision += 1;
     const event = this.record({
       milestoneId: milestone.id,
       phase: 'server',
@@ -121,13 +112,9 @@ export class ScenarioSession {
     });
     const result: AdvanceResult = {
       cursor: this.cursor,
-      revision: this.revision,
       milestone,
-      releasedGateIds,
       clientCommands,
       events: [event],
-      status:
-        this.cursor >= this.scenario.milestones.length ? 'complete' : 'running',
     };
     this.commands.set(command.commandId, result);
     if (this.commands.size > MAX_COMMANDS) {
@@ -169,32 +156,14 @@ export class ScenarioSession {
     return complete;
   }
 
-  eventsSince(revision: number): ScenarioEvent[] {
-    if (revision <= 0) return [...this.events];
-    return this.events.filter((event) => event.sequence > revision);
-  }
-
-  status(origin = ''): ScenarioStatus & { origin?: string } {
+  status(): ScenarioStatus {
     return {
       runId: this.runId,
       scenarioId: this.scenario.id,
-      generation: this.generation,
       cursor: this.cursor,
-      revision: Math.max(this.revision, this.sequence),
-      status:
-        this.cursor === 0
-          ? 'ready'
-          : this.cursor >= this.scenario.milestones.length
-            ? 'complete'
-            : 'running',
       milestones: this.scenario.milestones,
       events: [...this.events],
-      ...(origin ? { origin } : {}),
     };
-  }
-
-  isReleased(gateId: string): boolean {
-    return this.released.has(gateId);
   }
 
   dispose(reason: 'complete' | 'expired' | 'aborted') {

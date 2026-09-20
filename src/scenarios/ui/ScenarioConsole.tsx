@@ -271,7 +271,6 @@ export default function ScenarioConsole() {
       setSelectedId(result.milestone.id);
       await runtime.waitForCompletion(result.milestone.completesWhen);
       runtime.recordClientEvent({
-        milestoneId: result.milestone.id,
         kind: 'visible',
         source: 'ScenarioRunner',
         summary: `${result.milestone.title} visibly completed`,
@@ -406,11 +405,7 @@ export default function ScenarioConsole() {
           <div className={styles.titleBlock}>
             <span className={styles.eyebrow}>Deterministic scenario</span>
             <strong className={styles.title}>
-              {
-                milestones[0]
-                  ? runtime.bootstrap.scenarioId.replaceAll('-', ' ')
-                  : 'No scenario'
-              }
+              {runtime.bootstrap.scenarioId.replaceAll('-', ' ')}
             </strong>
           </div>
           <span className={styles.status}>{statusLabel}</span>
