@@ -226,6 +226,7 @@ export default function ScenarioConsole() {
     searchParams.get('running') === '1',
   );
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState<string>();
   const [selectedId, setSelectedId] = useState<string>();
   const [previewIds, setPreviewIds] = useState<string[]>([]);
@@ -264,7 +265,8 @@ export default function ScenarioConsole() {
   }, [interval, mode, playing]);
 
   async function advanceOne() {
-    if (busy || complete) return;
+    if (busyRef.current || complete) return;
+    busyRef.current = true;
     setBusy(true);
     setError(undefined);
     try {
@@ -281,6 +283,7 @@ export default function ScenarioConsole() {
       setPlaying(false);
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }

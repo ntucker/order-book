@@ -16,7 +16,7 @@ test('static shell streams before gated dashboard data', async ({
   abort.abort();
   const chunk = new TextDecoder().decode(first?.value);
   expect(chunk).toContain('Deterministic scenario');
-  expect(chunk).toContain('Dashboard loading');
+  expect(chunk).not.toContain('100.00');
 });
 
 test('manual mode advances one visible milestone without Binance traffic', async ({

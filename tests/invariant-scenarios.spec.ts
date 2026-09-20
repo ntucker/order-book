@@ -35,10 +35,10 @@ async function openRun(page: Page, scenarioId: string) {
 }
 
 async function advance(page: Page, step: number, total: number) {
-  await page
-    .getByRole('button', { name: 'Advance 1 milestone' })
-    .click({ force: true });
-  await expect(page.getByText(`${step} / ${total}`)).toBeVisible();
+  const button = page.getByRole('button', { name: 'Advance 1 milestone' });
+  await expect(button).toBeEnabled();
+  await button.click({ force: true });
+  await expect(page.getByRole('progressbar')).toHaveText(`${step} / ${total}`);
 }
 
 async function ledger(page: Page, runId: string) {
