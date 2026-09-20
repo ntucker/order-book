@@ -278,7 +278,7 @@ export default function ScenarioConsole() {
         source: 'ScenarioRunner',
         summary: `${result.milestone.title} visibly completed`,
       });
-      await runtime.refresh();
+      void runtime.refresh();
     } catch (caught) {
       setPlaying(false);
       setError(caught instanceof Error ? caught.message : String(caught));
