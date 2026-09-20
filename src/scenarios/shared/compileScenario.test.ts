@@ -57,4 +57,13 @@ describe('compileScenario', () => {
       }),
     ).toThrow('unknown stream event');
   });
+
+  it('rejects a missing posture', () => {
+    expect(() =>
+      compileScenario({
+        ...streamedRevealScenario,
+        posture: undefined as never,
+      }),
+    ).toThrow('missing posture');
+  });
 });

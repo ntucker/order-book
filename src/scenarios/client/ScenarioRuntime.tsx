@@ -18,6 +18,7 @@ import type {
   ScenarioBootstrap,
   ScenarioEvent,
   ScenarioOccurrenceDescriptor,
+  ScenarioRequestKind,
   ScenarioStatus,
 } from '../shared/types';
 
@@ -163,6 +164,11 @@ export class ScenarioRuntime {
       case 'navigation-committed':
         await this.waitForPathname(predicate.symbol);
         await afterPaint();
+        return;
+      case 'request-started':
+        await this.waitForRequestStarted(predicate.sources);
+        await afterPaint();
+        return;
     }
   }
 
@@ -353,6 +359,29 @@ export class ScenarioRuntime {
       };
       check();
     });
+  }
+
+  private async waitForRequestStarted(
+    sources: ScenarioRequestKind[],
+  ): Promise<void> {
+    const deadline = performance.now() + 15_000;
+    const seen = () =>
+      sources.every((source) =>
+        this.snapshotValue.events.some(
+          (event) =>
+            event.kind === 'request-started' && event.source === source,
+        ),
+      );
+    while (!seen()) {
+      if (performance.now() >= deadline) {
+        throw new Error(
+          `Timed out waiting for request-started: ${sources.join(', ')}`,
+        );
+      }
+      await this.refresh();
+      if (seen()) return;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 }
 

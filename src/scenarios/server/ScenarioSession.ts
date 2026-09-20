@@ -160,6 +160,8 @@ export class ScenarioSession {
     return {
       runId: this.runId,
       scenarioId: this.scenario.id,
+      title: this.scenario.title,
+      posture: this.scenario.posture,
       cursor: this.cursor,
       milestones: this.scenario.milestones,
       events: [...this.events],

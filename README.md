@@ -37,14 +37,17 @@ shows its lower-level request, action, normalized entity, endpoint metadata,
 commit, and visibility evidence. Affected-view chips highlight every registered
 place where the changed entity is rendered.
 
-Three scenarios are included:
+Each card is marked **Lock**, **Record**, or **Option**:
 
-1. **Streamed reveal and handoff** — shell, independently gated panels,
-   hydration, and the first live ticker update.
-2. **Newer live state wins** — an older book sequence arrives after newer live
-   state and is rejected by the entity merge rule.
-3. **Concurrent symbol transition** — BTC remains visible and live while ETH
-   navigation prepares.
+- **Lock** — Bucket 1: the run asserts an invariant that is already true on this path.
+- **Record** — a scripted timing or current master outcome. Ledger diamonds mean
+  the step happened, not that the invariant is satisfied. Variable timing is the thesis.
+- **Option** — a Bucket 3 design choice (Route H vs Route W). Completion is not a pass.
+
+Included runs cover one-number-everywhere, merge rejection, symbol switch,
+readiness-from-records, handoff outcomes A/B/C, live-after-hydrate, Route H vs W,
+and coming back after a symbol change. The mapping from the streaming UX
+invariants document lives with the PR that adds these runs.
 
 ### Authoring a scenario
 
@@ -68,7 +71,8 @@ provides immutable market fixtures and an ordered list of milestones:
 }
 ```
 
-Add the definition to `src/scenarios/definitions/index.ts`. The shared compiler,
+Set `posture` on the definition (`lock` | `record` | `option`). Add the
+definition to `src/scenarios/definitions/index.ts`. The shared compiler,
 Node session registry, transport adapters, scripted stream manager, runner, and
 inspector require no per-scenario changes.
 

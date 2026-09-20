@@ -6,6 +6,7 @@ export const streamedRevealScenario: ScenarioDefinition = {
   title: 'Streamed reveal and handoff',
   summary:
     'Watch the shell, independent panels, hydration, and the first live update arrive as distinct teaching beats.',
+  posture: 'lock',
   initialSymbol: 'BTCUSDT',
   fixtures: baseFixtures,
   milestones: [

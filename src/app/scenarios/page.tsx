@@ -13,6 +13,7 @@ export default function ScenariosPage() {
     id: scenario.id,
     title: scenario.title,
     summary: scenario.summary,
+    posture: scenario.posture,
     symbol: scenario.initialSymbol,
   }));
   return <ScenarioLauncher scenarios={scenarios} />;

@@ -14,6 +14,9 @@ export function compileScenario(
   definition: ScenarioDefinition,
 ): CompiledScenario {
   if (!definition.id.trim()) throw new Error('Scenario id is required');
+  if (!definition.posture) {
+    throw new Error(`Scenario "${definition.id}" is missing posture`);
+  }
   if (!definition.milestones.length) {
     throw new Error(`Scenario "${definition.id}" has no milestones`);
   }

@@ -13,6 +13,7 @@ import {
 import {
   useRequiredScenarioRuntime,
 } from '../client/ScenarioRuntime';
+import { POSTURE_HINT, POSTURE_LABEL } from '../shared/posture';
 import type {
   CompiledMilestone,
   EndpointDiff,
@@ -405,9 +406,16 @@ export default function ScenarioConsole() {
           <div className={styles.titleBlock}>
             <span className={styles.eyebrow}>Deterministic scenario</span>
             <strong className={styles.title}>
-              {runtime.bootstrap.scenarioId.replaceAll('-', ' ')}
+              {runtime.bootstrap.title}
             </strong>
           </div>
+          <span
+            className={styles.posture}
+            data-posture={runtime.bootstrap.posture}
+            title={POSTURE_HINT[runtime.bootstrap.posture]}
+          >
+            {POSTURE_LABEL[runtime.bootstrap.posture]}
+          </span>
           <span className={styles.status}>{statusLabel}</span>
           <span
             className={styles.progress}

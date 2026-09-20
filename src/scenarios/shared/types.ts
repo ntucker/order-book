@@ -66,7 +66,8 @@ export type CompletionPredicate =
   | { kind: 'occurrences-painted'; occurrenceIds: string[] }
   | { kind: 'dashboard-hydrated' }
   | { kind: 'navigation-committed'; symbol: string }
-  | { kind: 'command-applied' };
+  | { kind: 'command-applied' }
+  | { kind: 'request-started'; sources: ScenarioRequestKind[] };
 
 export interface ScenarioMilestoneDefinition {
   id: string;
@@ -107,10 +108,21 @@ export interface ScenarioFixtures {
   streamEvents: Record<string, ScenarioStreamFixture>;
 }
 
+export type ScenarioPosture = 'lock' | 'record' | 'option';
+
 export interface ScenarioDefinition {
   id: string;
   title: string;
   summary: string;
+  /**
+   * How to read the run. Ledger diamonds mean "this step happened",
+   * not "the invariant is satisfied".
+   *
+   * - `lock` — Bucket 1: assert the invariant on this path
+   * - `record` — scripted timing / current master outcome; variable timing is the thesis
+   * - `option` — Bucket 3 design choice, not a pass/fail lock
+   */
+  posture: ScenarioPosture;
   initialSymbol: string;
   fixtures: ScenarioFixtures;
   milestones: ScenarioMilestoneDefinition[];
@@ -146,6 +158,8 @@ export interface AdvanceResult {
 export interface ScenarioStatus {
   runId: string;
   scenarioId: string;
+  title: string;
+  posture: ScenarioPosture;
   cursor: number;
   milestones: CompiledMilestone[];
   events: ScenarioEvent[];

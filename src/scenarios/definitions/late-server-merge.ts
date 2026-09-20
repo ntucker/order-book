@@ -6,6 +6,7 @@ export const lateServerMergeScenario: ScenarioDefinition = {
   title: 'Newer live state wins',
   summary:
     'See an older update arrive after newer live data without regressing the normalized store or visible prices.',
+  posture: 'lock',
   initialSymbol: 'BTCUSDT',
   fixtures: baseFixtures,
   milestones: [
