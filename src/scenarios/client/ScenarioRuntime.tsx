@@ -324,19 +324,28 @@ export class ScenarioRuntime {
     for (const listener of this.listeners) listener();
   }
 
-  private waitUntil(test: () => boolean): Promise<void> {
+  private waitUntil(test: () => boolean, timeoutMs = Infinity): Promise<void> {
     if (this.disposed) {
       return Promise.reject(new Error('Scenario runtime ended'));
     }
     if (test()) return Promise.resolve();
     return new Promise((resolve, reject) => {
+      const timer =
+        timeoutMs < Infinity
+          ? window.setTimeout(() => {
+              unsubscribe();
+              reject(new Error('Timed out waiting for scenario condition'));
+            }, timeoutMs)
+          : undefined;
       const unsubscribe = this.subscribe(() => {
         if (this.disposed) {
+          if (timer) window.clearTimeout(timer);
           unsubscribe();
           reject(new Error('Scenario runtime ended'));
           return;
         }
         if (!test()) return;
+        if (timer) window.clearTimeout(timer);
         unsubscribe();
         resolve();
       });
@@ -382,27 +391,37 @@ export class ScenarioRuntime {
     if (!sources.length) {
       throw new Error('request-started predicate requires sources');
     }
-    const deadline = performance.now() + 15_000;
     const milestoneId = this.currentMilestoneId();
     const seen = () =>
-      sources.every((source) =>
-        this.snapshotValue.events.some(
+      sources.every((source) => {
+        const startedEvents = this.snapshotValue.events.filter(
           (event) =>
-            event.kind === 'request-started' &&
-            event.source === source &&
-            event.milestoneId === milestoneId,
-        ),
-      );
-    while (!seen()) {
-      if (this.disposed) throw new Error('Scenario runtime ended');
-      if (performance.now() >= deadline) {
+            event.kind === 'request-started' && event.source === source,
+        );
+        if (!startedEvents.length) return false;
+        const released = this.snapshotValue.events.some(
+          (event) =>
+            event.kind === 'response-released' && event.source === source,
+        );
+        // In-flight rows may be tagged with the previous cursor if the panel
+        // GET resumed before this advance() response updated the client cursor.
+        return (
+          startedEvents.some((event) => event.milestoneId === milestoneId) ||
+          !released
+        );
+      });
+    try {
+      await this.waitUntil(seen, 15_000);
+    } catch (caught) {
+      if (
+        caught instanceof Error &&
+        caught.message === 'Timed out waiting for scenario condition'
+      ) {
         throw new Error(
           `Timed out waiting for request-started: ${sources.join(', ')}`,
         );
       }
-      await this.refresh();
-      if (seen()) return;
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      throw caught;
     }
   }
 }
@@ -455,11 +474,21 @@ export function DashboardHydratedMarker() {
   return null;
 }
 
-export function ScenarioPanelGate({ panelId }: { panelId: string }) {
+export function ScenarioPanelGate({
+  panelId,
+  children,
+}: {
+  panelId: string;
+  children?: ReactNode;
+}) {
   const runtime = useScenarioRuntime();
-  if (!runtime) return null;
-  use(runtime.getPanelGatePromise(panelId));
-  return <i hidden data-scenario-panel={panelId} />;
+  if (runtime) use(runtime.getPanelGatePromise(panelId));
+  return (
+    <>
+      {runtime ? <i hidden data-scenario-panel={panelId} /> : null}
+      {children}
+    </>
+  );
 }
 
 export function useScenarioOccurrence(

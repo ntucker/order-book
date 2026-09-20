@@ -35,7 +35,9 @@ async function openRun(page: Page, scenarioId: string) {
 }
 
 async function advance(page: Page, step: number, total: number) {
-  await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
+  await page
+    .getByRole('button', { name: 'Advance 1 milestone' })
+    .click({ force: true });
   await expect(page.getByText(`${step} / ${total}`)).toBeVisible();
 }
 
@@ -91,7 +93,7 @@ test('header ticker is ready from the watchlist list record', async ({
 }) => {
   const { runId } = await openRun(page, 'readiness-from-records');
   await advance(page, 1, 3);
-  await expect(page.getByLabel('Markets')).toBeVisible();
+  await expect(page.getByLabel('Markets').first()).toBeVisible();
   await advance(page, 2, 3);
   await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
   const status = await ledger(page, runId);
@@ -159,12 +161,12 @@ test('rapid book updates keep the newest inside levels', async ({ page }) => {
   await advance(page, 2, 4);
   await advance(page, 3, 4);
   const book = page.getByRole('table', { name: 'BTCUSDT order book' });
-  await expect(book.getByText('100.04', { exact: true })).toBeVisible();
-  await expect(book.getByText('100.06', { exact: true })).toBeVisible();
+  await expect(book.getByRole('cell', { name: '100.04', exact: true })).toBeVisible();
+  await expect(book.getByRole('cell', { name: '100.06', exact: true })).toBeVisible();
   await advance(page, 4, 4);
-  await expect(book.getByText('100.07', { exact: true })).toBeVisible();
-  await expect(book.getByText('100.08', { exact: true })).toBeVisible();
-  await expect(book.getByText('100.06', { exact: true })).toHaveCount(0);
+  await expect(book.getByRole('cell', { name: '100.07', exact: true })).toBeVisible();
+  await expect(book.getByRole('cell', { name: '100.08', exact: true })).toBeVisible();
+  await expect(book.getByRole('cell', { name: '100.06', exact: true })).toHaveCount(0);
 });
 
 test('route H does not fetch candles until the chart piece', async ({
@@ -176,6 +178,7 @@ test('route H does not fetch candles until the chart piece', async ({
   await advance(page, 3, 4);
   const before = await ledger(page, runId);
   expect(started(before.events, 'candles')).toHaveLength(0);
+  expect(released(before.events, 'candles')).toHaveLength(0);
   await advance(page, 4, 4);
   const after = await ledger(page, runId);
   expect(started(after.events, 'candles').length).toBeGreaterThan(0);

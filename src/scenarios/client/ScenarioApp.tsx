@@ -24,8 +24,8 @@ function ScenarioDashboard({
 }) {
   const runtime = useRequiredScenarioRuntime();
   const endpoints = useMemo(
-    () => createScenarioEndpoints(bootstrap.origin, bootstrap.runId),
-    [bootstrap.origin, bootstrap.runId],
+    () => createScenarioEndpoints(bootstrap.origin, bootstrap.runId, runtime),
+    [bootstrap.origin, bootstrap.runId, runtime],
   );
   return (
     <div className="scenario-dashboard">

@@ -77,6 +77,8 @@ export class ScenarioSession {
       throw new StaleScenarioCursorError('Scenario is already complete');
     }
 
+    // Cursor first so in-flight fetches tag this milestone, not the previous one.
+    this.cursor += 1;
     const clientCommands: ClientScenarioCommand[] = [];
     for (const release of milestone.releases) {
       switch (release.kind) {
@@ -101,8 +103,6 @@ export class ScenarioSession {
           break;
       }
     }
-
-    this.cursor += 1;
     const event = this.record({
       milestoneId: milestone.id,
       phase: 'server',
