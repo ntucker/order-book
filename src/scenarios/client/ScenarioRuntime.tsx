@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import {
   createContext,
   use,
@@ -92,6 +91,9 @@ export class ScenarioRuntime {
 
   setNavigate(navigate: (symbol: string) => void) {
     this.navigate = navigate;
+    return () => {
+      if (this.navigate === navigate) this.navigate = undefined;
+    };
   }
 
   async advance(): Promise<AdvanceResult> {
@@ -364,14 +366,6 @@ export function ScenarioRuntimeProvider({
   children: ReactNode;
 }) {
   const runtime = useMemo(() => new ScenarioRuntime(bootstrap), [bootstrap]);
-  const router = useRouter();
-  useEffect(() => {
-    runtime.setNavigate((symbol) => {
-      router.push(
-        `/scenarios/${bootstrap.scenarioId}/${bootstrap.runId}/${symbol}${window.location.search}`,
-      );
-    });
-  }, [bootstrap.runId, bootstrap.scenarioId, router, runtime]);
   useEffect(() => () => runtime.cleanup(), [runtime]);
   return (
     <ScenarioRuntimeContext value={runtime}>
@@ -388,6 +382,14 @@ export function useRequiredScenarioRuntime(): ScenarioRuntime {
   const runtime = useScenarioRuntime();
   if (!runtime) throw new Error('Scenario runtime is not available');
   return runtime;
+}
+
+export function useScenarioNavigation(navigate: (symbol: string) => void) {
+  const runtime = useScenarioRuntime();
+  useEffect(() => {
+    if (!runtime) return;
+    return runtime.setNavigate(navigate);
+  }, [navigate, runtime]);
 }
 
 export function ScenarioHydrationGate({ children }: { children: ReactNode }) {

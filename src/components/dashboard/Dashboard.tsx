@@ -3,11 +3,17 @@
 import { AsyncBoundary } from '@data-client/react';
 import { useRouter } from 'next/navigation';
 import {
+  useCallback,
   useOptimistic,
   useState,
   useTransition,
   type ReactNode,
 } from 'react';
+
+import {
+  ScenarioPanelGate,
+  useScenarioNavigation,
+} from '@/scenarios/client/ScenarioRuntime';
 
 import DepthChart from '../book/DepthChart';
 import OrderBookPanel from '../book/OrderBookPanel';
@@ -18,7 +24,6 @@ import TickerHeader from '../ticker/TickerHeader';
 import TradesPanel from '../trades/TradesPanel';
 import Segmented from '../ui/Segmented';
 import Watchlist from '../watchlist/Watchlist';
-import { ScenarioPanelGate } from '@/scenarios/client/ScenarioRuntime';
 import styles from './Dashboard.module.css';
 
 type MobilePane = 'book' | 'chart' | 'trades';
@@ -59,18 +64,26 @@ export default function Dashboard({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [pendingSymbol, setPendingSymbol] = useOptimistic<string | null>(null);
-  const hrefForSymbol = (next: string) =>
-    scenarioPath
-      ? `/scenarios/${scenarioPath.scenarioId}/${scenarioPath.runId}/${next}`
-      : `/${next}`;
+  const scenarioBase = scenarioPath
+    ? `/scenarios/${scenarioPath.scenarioId}/${scenarioPath.runId}`
+    : '';
+  const hrefForSymbol = useCallback(
+    (next: string) => (scenarioBase ? `${scenarioBase}/${next}` : `/${next}`),
+    [scenarioBase],
+  );
 
-  const navigate = (next: string) => {
-    if (next === symbol) return;
-    startTransition(() => {
-      setPendingSymbol(next);
-      router.push(hrefForSymbol(next));
-    });
-  };
+  const navigate = useCallback(
+    (next: string) => {
+      if (next === symbol) return;
+      startTransition(() => {
+        setPendingSymbol(next);
+        const query = scenarioPath ? window.location.search : '';
+        router.push(`${hrefForSymbol(next)}${query}`);
+      });
+    },
+    [hrefForSymbol, router, scenarioPath, setPendingSymbol, symbol],
+  );
+  useScenarioNavigation(navigate);
 
   const book = (
     <Bound id={`${symbol}-book`} panelId="book" kind="book" title="Order Book">

@@ -89,10 +89,25 @@ test('older scripted book data cannot regress the normalized entity', async ({
   const advance = page.getByRole('button', {
     name: 'Advance 1 milestone',
   });
-  for (const step of [1, 2, 3, 4]) {
+  for (const step of [1, 2, 3]) {
     await advance.click();
     await expect(page.getByText(`${step} / 4`)).toBeVisible();
   }
+  const book = page.getByRole('table', {
+    name: 'BTCUSDT order book',
+  });
+  const expectUpdatedBook = async () => {
+    await expect(book.getByText('100.04', { exact: true })).toBeVisible();
+    await expect(book.getByText('100.06', { exact: true })).toBeVisible();
+    await expect(book.getByText('100.05', { exact: true })).toBeVisible();
+    await expect(
+      book.getByText('Spread 0.02 · 2.00 bps', { exact: true }),
+    ).toBeVisible();
+  };
+  await expectUpdatedBook();
+  await advance.click();
+  await expect(page.getByText('4 / 4')).toBeVisible();
+  await expectUpdatedBook();
   await page
     .getByRole('button', { name: /Older update arrives and is rejected/ })
     .click();
@@ -106,11 +121,36 @@ test('auto-play survives symbol navigation and finishes on ETH', async ({
   await page.goto(`/scenarios/symbol-transition/${runId}/BTCUSDT`, {
     waitUntil: 'commit',
   });
+  let releaseEth!: () => void;
+  const ethHeld = new Promise<void>((resolve) => {
+    releaseEth = resolve;
+  });
+  let noteEthRequest!: () => void;
+  const ethRequested = new Promise<void>((resolve) => {
+    noteEthRequest = resolve;
+  });
+  await page.route(
+    `**/scenarios/symbol-transition/${runId}/ETHUSDT*`,
+    async (route) => {
+      if (route.request().headers().rsc === '1') {
+        noteEthRequest();
+        await ethHeld;
+      }
+      await route.continue();
+    },
+  );
   await page.getByText('Auto', { exact: true }).click();
   await page.getByLabel('Milestone interval').selectOption('1000');
   await page
     .getByRole('button', { name: 'Start', exact: true })
     .click();
+  await ethRequested;
+  await expect(page.locator('[aria-busy="true"]')).toBeVisible();
+  await expect(page.getByLabel('BTCUSDT ticker')).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: /ETH/ }).first(),
+  ).toHaveAttribute('data-pending', '');
+  releaseEth();
   await expect(page).toHaveURL(
     new RegExp(
       `/scenarios/symbol-transition/${runId}/ETHUSDT(?:\\?.*)?$`,

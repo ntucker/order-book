@@ -25,7 +25,11 @@ function parseStream(stream: string) {
   };
 }
 
-function updateLevels(previous: Level[], changes: unknown): Level[] {
+export function updateLevels(
+  previous: Level[],
+  changes: unknown,
+  side: 'bid' | 'ask',
+): Level[] {
   const levels = new Map(previous.map((level) => [level[0], level[1]]));
   if (Array.isArray(changes)) {
     for (const raw of changes) {
@@ -37,7 +41,9 @@ function updateLevels(previous: Level[], changes: unknown): Level[] {
       else levels.set(price, qty);
     }
   }
-  return [...levels.entries()];
+  return [...levels.entries()].sort((left, right) =>
+    side === 'bid' ? right[0] - left[0] : left[0] - right[0],
+  );
 }
 
 export class ScenarioStreamManager implements Manager {
@@ -119,8 +125,8 @@ export class ScenarioStreamManager implements Manager {
       controller.set(OrderBook, { symbol: parsed.symbol }, (previous) => ({
         symbol: parsed.symbol,
         lastUpdateId,
-        bids: updateLevels(previous.bids, data.b),
-        asks: updateLevels(previous.asks, data.a),
+        bids: updateLevels(previous.bids, data.b, 'bid'),
+        asks: updateLevels(previous.asks, data.a, 'ask'),
       }));
     } else {
       const handler =
