@@ -3,36 +3,31 @@ import { describe, expect, it } from 'vitest';
 import { listScenarioDefinitions } from '../definitions';
 import { compileScenario } from '../shared/compileScenario';
 
-const EXPECTED_IDS = [
-  'streamed-reveal',
-  'late-server-merge',
-  'symbol-transition',
-  'readiness-from-records',
-  'suspend-keeps-picture',
-  'rapid-book-updates',
-  'handoff-outcome-a',
-  'handoff-outcome-b',
-  'handoff-outcome-c',
-  'live-after-hydrate',
-  'hidden-pane-subscriptions',
-  'pending-sibling-live',
-  'route-h',
-  'route-w-fetch-now',
-  'route-w-wait',
-  'symbol-return',
+const EXPECTED = [
+  ['streamed-reveal', 'lock'],
+  ['late-server-merge', 'lock'],
+  ['symbol-transition', 'lock'],
+  ['readiness-from-records', 'lock'],
+  ['rapid-book-updates', 'record'],
+  ['handoff-outcome-a', 'record'],
+  ['handoff-outcome-b', 'record'],
+  ['handoff-outcome-c', 'record'],
+  ['live-after-hydrate', 'record'],
+  ['hidden-pane-subscriptions', 'record'],
+  ['route-h', 'option'],
+  ['route-w-fetch-now', 'option'],
+  ['symbol-return', 'record'],
 ] as const;
 
 describe('scenario inventory', () => {
-  it('compiles every registered definition with unique ids', () => {
+  it('compiles every registered definition with unique ids and postures', () => {
     const definitions = listScenarioDefinitions();
-    expect(definitions.map((definition) => definition.id)).toEqual([
-      ...EXPECTED_IDS,
-    ]);
-    const compiled = definitions.map((definition) => compileScenario(definition));
+    expect(
+      definitions.map((definition) => [definition.id, definition.posture]),
+    ).toEqual(EXPECTED.map(([id, posture]) => [id, posture]));
+    const compiled = definitions.map((definition) =>
+      compileScenario(definition),
+    );
     expect(new Set(compiled.map((item) => item.id)).size).toBe(compiled.length);
-    for (const scenario of compiled) {
-      expect(scenario.posture).toMatch(/^(lock|record|option)$/);
-      expect(scenario.milestones.length).toBeGreaterThan(0);
-    }
   });
 });

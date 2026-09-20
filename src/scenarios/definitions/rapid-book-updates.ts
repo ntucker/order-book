@@ -6,8 +6,8 @@ export const rapidBookUpdatesScenario: ScenarioDefinition = {
   id: 'rapid-book-updates',
   title: 'Rapid book updates keep the newest book',
   summary:
-    'Two depth updates a few beats apart. Only changed levels move; the screen never stutters back to the previous sequence.',
-  posture: 'lock',
+    'Two depth updates a few beats apart. Newest inside levels win. This is not a stutter measurement (1.5); it records 1.2 on a forward sequence.',
+  posture: 'record',
   initialSymbol: 'BTCUSDT',
   fixtures: baseFixtures,
   milestones: [

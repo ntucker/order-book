@@ -49,6 +49,15 @@ export function compileScenario(
       }
     }
 
+    if (
+      milestone.completesWhen.kind === 'request-started' &&
+      milestone.completesWhen.sources.length === 0
+    ) {
+      throw new Error(
+        `Milestone "${milestone.id}" request-started predicate has no sources`,
+      );
+    }
+
     return Object.freeze({ ...milestone, cursor: index + 1 });
   });
 

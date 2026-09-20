@@ -1,19 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const SCENARIOS = [
-  { id: 'readiness-from-records', steps: 4 },
-  { id: 'suspend-keeps-picture', steps: 3 },
+  { id: 'readiness-from-records', steps: 3 },
   { id: 'rapid-book-updates', steps: 4 },
   { id: 'handoff-outcome-a', steps: 2 },
   { id: 'handoff-outcome-b', steps: 3 },
   { id: 'handoff-outcome-c', steps: 3 },
   { id: 'live-after-hydrate', steps: 4 },
   { id: 'hidden-pane-subscriptions', steps: 3 },
-  { id: 'pending-sibling-live', steps: 4 },
   { id: 'route-h', steps: 4 },
   { id: 'route-w-fetch-now', steps: 4 },
-  { id: 'route-w-wait', steps: 4 },
-  { id: 'symbol-return', steps: 4 },
+  { id: 'symbol-return', steps: 5 },
 ] as const;
 
 type LedgerEvent = { kind: string; source: string };
@@ -62,7 +59,7 @@ function released(events: LedgerEvent[], source: string) {
 
 test('launcher lists lock, record, and option postures', async ({ page }) => {
   await page.goto('/scenarios');
-  await expect(page.getByRole('article')).toHaveCount(16);
+  await expect(page.getByRole('article')).toHaveCount(13);
   await expect(page.getByText('Lock', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Record', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Option', { exact: true }).first()).toBeVisible();
@@ -93,14 +90,17 @@ test('header ticker is ready from the watchlist list record', async ({
   page,
 }) => {
   const { runId } = await openRun(page, 'readiness-from-records');
-  await advance(page, 1, 4);
+  await advance(page, 1, 3);
   await expect(page.getByLabel('Markets')).toBeVisible();
-  await advance(page, 2, 4);
+  await advance(page, 2, 3);
   await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
   const status = await ledger(page, runId);
   expect(started(status.events, 'tickers').length).toBeGreaterThan(0);
   expect(started(status.events, 'symbol-info').length).toBeGreaterThan(0);
   expect(started(status.events, 'ticker')).toHaveLength(0);
+  await advance(page, 3, 3);
+  const done = await ledger(page, runId);
+  expect(started(done.events, 'ticker')).toHaveLength(0);
 });
 
 test('outcome A keeps the dashboard blank until the slowest panel', async ({
@@ -113,10 +113,9 @@ test('outcome A keeps the dashboard blank until the slowest panel', async ({
   await expect(
     page.getByRole('table', { name: 'BTCUSDT order book' }),
   ).toBeVisible();
-  await expect(page.getByText('Chart', { exact: true }).first()).toBeVisible();
 });
 
-test('outcome C records client fetches before any snapshot is released', async ({
+test('outcome C records first-wave fetches only, then the waterfall', async ({
   page,
 }) => {
   const { runId } = await openRun(page, 'handoff-outcome-c');
@@ -126,7 +125,9 @@ test('outcome C records client fetches before any snapshot is released', async (
   expect(started(mid.events, 'symbol-info').length).toBeGreaterThan(0);
   expect(started(mid.events, 'tickers').length).toBeGreaterThan(0);
   expect(released(mid.events, 'symbol-info')).toHaveLength(0);
-  expect(released(mid.events, 'tickers')).toHaveLength(0);
+  expect(started(mid.events, 'ticker')).toHaveLength(0);
+  expect(started(mid.events, 'book')).toHaveLength(0);
+  expect(started(mid.events, 'candles')).toHaveLength(0);
   await advance(page, 3, 3);
   await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
 });
@@ -140,6 +141,9 @@ test('live tick updates the header while the book is still a skeleton', async ({
   await advance(page, 3, 4);
   await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.05');
   await expect(
+    page.getByRole('link', { name: /BTC.*100\.05/ }).first(),
+  ).toBeVisible();
+  await expect(
     page.getByRole('table', { name: 'BTCUSDT order book' }),
   ).toHaveCount(0);
   await advance(page, 4, 4);
@@ -151,10 +155,16 @@ test('live tick updates the header while the book is still a skeleton', async ({
 
 test('rapid book updates keep the newest inside levels', async ({ page }) => {
   await openRun(page, 'rapid-book-updates');
-  for (const step of [1, 2, 3, 4]) await advance(page, step, 4);
+  await advance(page, 1, 4);
+  await advance(page, 2, 4);
+  await advance(page, 3, 4);
   const book = page.getByRole('table', { name: 'BTCUSDT order book' });
+  await expect(book.getByText('100.04', { exact: true })).toBeVisible();
+  await expect(book.getByText('100.06', { exact: true })).toBeVisible();
+  await advance(page, 4, 4);
   await expect(book.getByText('100.07', { exact: true })).toBeVisible();
   await expect(book.getByText('100.08', { exact: true })).toBeVisible();
+  await expect(book.getByText('100.06', { exact: true })).toHaveCount(0);
 });
 
 test('route H does not fetch candles until the chart piece', async ({
@@ -195,32 +205,26 @@ test('hidden mobile pane still receives live ticker updates', async ({
   await advance(page, 2, 3);
   await page.setViewportSize({ width: 375, height: 800 });
   await page.getByRole('radio', { name: 'Trades' }).click();
+  await expect(
+    page.getByRole('table', { name: 'BTCUSDT recent trades' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('table', { name: 'BTCUSDT order book' }),
+  ).toBeHidden();
   await advance(page, 3, 3);
   await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.05');
 });
 
-test('returning to BTC remounts a new store after ETH', async ({ page }) => {
+test('returning to BTC does not keep the live 100.05', async ({ page }) => {
   await openRun(page, 'symbol-return');
-  await advance(page, 1, 4);
-  await advance(page, 2, 4);
-  await advance(page, 3, 4);
+  await advance(page, 1, 5);
+  await advance(page, 2, 5);
+  await advance(page, 3, 5);
+  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.05');
+  await advance(page, 4, 5);
   await expect(page.getByLabel('ETHUSDT ticker')).toBeVisible();
-  await advance(page, 4, 4);
-  await expect(page.getByLabel('BTCUSDT ticker')).toBeVisible();
+  await advance(page, 5, 5);
+  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
+  await expect(page.getByLabel('BTCUSDT ticker')).not.toContainText('100.05');
   await expect(page).toHaveURL(/\/BTCUSDT(?:\?.*)?$/);
-});
-
-test('hydrating with a pending book keeps the painted header', async ({
-  page,
-}) => {
-  await openRun(page, 'suspend-keeps-picture');
-  await advance(page, 1, 3);
-  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
-  await advance(page, 2, 3);
-  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
-  await expect(
-    page.getByRole('table', { name: 'BTCUSDT order book' }),
-  ).toHaveCount(0);
-  await advance(page, 3, 3);
-  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
 });

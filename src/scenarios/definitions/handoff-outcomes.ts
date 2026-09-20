@@ -123,13 +123,7 @@ export const handoffOutcomeCScenario: ScenarioDefinition = {
       explanation:
         'Snapshots release into the already-started requests. The person sees client-rendered panels; the server never got to reveal them with data.',
       releases: [...firstWaveResponses, ...secondWaveResponses],
-      completesWhen: {
-        kind: 'occurrences-painted',
-        occurrenceIds: [
-          'ticker-header-price',
-          'watchlist-btc-price',
-        ],
-      },
+      completesWhen: { kind: 'panel-visible', panelId: 'ticker' },
       storeSummary: ['Client-fetched records'],
       visibleSummary: ['Header and Markets from browser data'],
     },

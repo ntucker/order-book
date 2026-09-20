@@ -61,7 +61,7 @@ export const routeWFetchNowScenario: ScenarioDefinition = {
   id: 'route-w-fetch-now',
   title: 'Route W — fetch now',
   summary:
-    'Wake pending panels before their snapshots. Each woken suspending panel fetches immediately and waits on the response gate. Today’s master. Option, not a lock — the ledger records the extra request-started rows.',
+    'Wake pending panels before their snapshots. Each woken suspending panel fetches immediately; the response gate only delays the body. A true wait-without-FETCH is HOLD data-client 4090 and is not a second card here.',
   posture: 'option',
   initialSymbol: 'BTCUSDT',
   fixtures: baseFixtures,
@@ -101,64 +101,8 @@ export const routeWFetchNowScenario: ScenarioDefinition = {
       explanation:
         'Responses release into the already-started client requests. There is no visible number swap here because fixtures match; the cost is the extra request, recorded in the ledger.',
       releases: [...secondWaveResponses],
-      completesWhen: {
-        kind: 'occurrences-painted',
-        occurrenceIds: ['book-panel'],
-      },
+      completesWhen: { kind: 'panel-visible', panelId: 'book' },
       visibleSummary: ['Book from client fetch'],
-    },
-  ],
-};
-
-export const routeWWaitScenario: ScenarioDefinition = {
-  id: 'route-w-wait',
-  title: 'Route W — wait on the piece',
-  summary:
-    'Same wake-up as fetch-now, but the response gate holds the already-started fetch until the piece. Honest analog of “wait”: this runtime cannot skip the FETCH, it can only delay the body. Option, not a 4090 waiter.',
-  posture: 'option',
-  initialSymbol: 'BTCUSDT',
-  fixtures: baseFixtures,
-  milestones: [
-    {
-      id: 'fast-path',
-      title: 'Fast panels paint',
-      explanation: 'Markets and Header reveal with their data.',
-      releases: [...firstWaveResponses, ...firstWavePanels],
-      completesWhen: { kind: 'panel-visible', panelId: 'ticker' },
-      visibleSummary: ['Header'],
-    },
-    {
-      id: 'hydrate',
-      title: 'Hydrate',
-      explanation: 'Client takes over revealed panels.',
-      releases: [hydrateDashboard],
-      completesWhen: { kind: 'dashboard-hydrated' },
-      visibleSummary: ['Interactive Header'],
-    },
-    {
-      id: 'wake-and-wait',
-      title: 'Woken panels wait on still-closed snapshots',
-      explanation:
-        'Pending panel gates open. Fetches start and hang on response gates — delayed fetch, not a readiness waiter. Browser-only reads do not exist in this app, so there is no extra “wait for the page” tax to show.',
-      releases: [...secondWavePanels],
-      completesWhen: {
-        kind: 'request-started',
-        sources: ['book', 'trades', 'candles'],
-      },
-      storeSummary: ['request-started, no response-released'],
-      visibleSummary: ['Skeletons while the piece is outstanding'],
-    },
-    {
-      id: 'piece-releases-waiters',
-      title: 'Piece lands and the hung fetches complete',
-      explanation:
-        'Releasing the snapshots is this framework’s “piece arrived”. Zero second requests; the first fetch completes. A true per-key waiter would have skipped request-started entirely (HOLD data-client 4090).',
-      releases: [...secondWaveResponses],
-      completesWhen: {
-        kind: 'occurrences-painted',
-        occurrenceIds: ['book-panel'],
-      },
-      visibleSummary: ['Book from the held fetch'],
     },
   ],
 };

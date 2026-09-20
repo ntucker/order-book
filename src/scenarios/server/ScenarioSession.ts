@@ -156,6 +156,10 @@ export class ScenarioSession {
     return complete;
   }
 
+  currentMilestoneId() {
+    return this.scenario.milestones[this.cursor - 1]?.id ?? 'bootstrap';
+  }
+
   status(): ScenarioStatus {
     return {
       runId: this.runId,

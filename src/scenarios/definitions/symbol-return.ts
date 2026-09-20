@@ -28,6 +28,19 @@ export const symbolReturnScenario: ScenarioDefinition = {
       visibleSummary: ['Interactive BTC'],
     },
     {
+      id: 'btc-live-tick',
+      title: 'BTC ticks to 100.05',
+      explanation:
+        'A live ticker write marks this store. If coming back showed remembered numbers, the Header would still say 100.05.',
+      releases: [{ kind: 'stream', eventId: 'ticker-newer' }],
+      completesWhen: {
+        kind: 'occurrences-painted',
+        occurrenceIds: ['ticker-header-price', 'watchlist-btc-price'],
+      },
+      storeSummary: ['Ticker:BTCUSDT 100.05'],
+      visibleSummary: ['Header 100.05'],
+    },
+    {
       id: 'open-eth',
       title: 'Navigate to ETH',
       explanation:
@@ -43,7 +56,7 @@ export const symbolReturnScenario: ScenarioDefinition = {
         'A new page tree and a new DataProvider. Library default “show remembered, refresh in background” cannot apply across that remount. BTC paints again from latched fixtures.',
       releases: [{ kind: 'navigate', symbol: 'BTCUSDT' }],
       completesWhen: { kind: 'navigation-committed', symbol: 'BTCUSDT' },
-      visibleSummary: ['BTC again, new store'],
+      visibleSummary: ['BTC 100.00 from fixtures, not 100.05'],
     },
   ],
 };

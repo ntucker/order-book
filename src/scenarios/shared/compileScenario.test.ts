@@ -66,4 +66,18 @@ describe('compileScenario', () => {
       }),
     ).toThrow('missing posture');
   });
+
+  it('rejects an empty request-started predicate', () => {
+    expect(() =>
+      compileScenario({
+        ...streamedRevealScenario,
+        milestones: [
+          {
+            ...streamedRevealScenario.milestones[0],
+            completesWhen: { kind: 'request-started', sources: [] },
+          },
+        ],
+      }),
+    ).toThrow('no sources');
+  });
 });

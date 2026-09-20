@@ -61,6 +61,7 @@ export class ScenarioRuntime {
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
   private navigate?: (symbol: string) => void;
+  private disposed = false;
 
   constructor(bootstrap: ScenarioBootstrap) {
     this.bootstrap = bootstrap;
@@ -156,7 +157,12 @@ export class ScenarioRuntime {
       case 'occurrences-painted':
         await this.waitUntil(() =>
           predicate.occurrenceIds.every((id) =>
-            this.occurrences.has(id),
+            this.snapshotValue.events.some(
+              (event) =>
+                event.milestoneId === this.currentMilestoneId() &&
+                event.occurrenceIds.includes(id) &&
+                (event.kind === 'store-committed' || event.kind === 'command'),
+            ),
           ),
         );
         await afterPaint();
@@ -280,6 +286,7 @@ export class ScenarioRuntime {
   }
 
   cleanup() {
+    this.disposed = true;
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
@@ -318,9 +325,17 @@ export class ScenarioRuntime {
   }
 
   private waitUntil(test: () => boolean): Promise<void> {
+    if (this.disposed) {
+      return Promise.reject(new Error('Scenario runtime ended'));
+    }
     if (test()) return Promise.resolve();
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const unsubscribe = this.subscribe(() => {
+        if (this.disposed) {
+          unsubscribe();
+          reject(new Error('Scenario runtime ended'));
+          return;
+        }
         if (!test()) return;
         unsubscribe();
         resolve();
@@ -364,15 +379,22 @@ export class ScenarioRuntime {
   private async waitForRequestStarted(
     sources: ScenarioRequestKind[],
   ): Promise<void> {
+    if (!sources.length) {
+      throw new Error('request-started predicate requires sources');
+    }
     const deadline = performance.now() + 15_000;
+    const milestoneId = this.currentMilestoneId();
     const seen = () =>
       sources.every((source) =>
         this.snapshotValue.events.some(
           (event) =>
-            event.kind === 'request-started' && event.source === source,
+            event.kind === 'request-started' &&
+            event.source === source &&
+            event.milestoneId === milestoneId,
         ),
       );
     while (!seen()) {
+      if (this.disposed) throw new Error('Scenario runtime ended');
       if (performance.now() >= deadline) {
         throw new Error(
           `Timed out waiting for request-started: ${sources.join(', ')}`,

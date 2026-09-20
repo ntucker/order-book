@@ -1,7 +1,6 @@
 import type { ScenarioDefinition } from '../shared/types';
 import { baseFixtures } from './fixtures';
 import {
-  hydrateDashboard,
   secondWavePanels,
   secondWaveResponses,
 } from './releases';
@@ -54,14 +53,6 @@ export const readinessFromRecordsScenario: ScenarioDefinition = {
       completesWhen: { kind: 'panel-visible', panelId: 'book' },
       storeSummary: ['OrderBook', 'TradeFeed', 'Candles'],
       visibleSummary: ['Complete dashboard'],
-    },
-    {
-      id: 'dashboard-hydrated',
-      title: 'Dashboard becomes interactive',
-      explanation: 'Hydration starts live subscriptions on the already-painted values.',
-      releases: [hydrateDashboard],
-      completesWhen: { kind: 'dashboard-hydrated' },
-      visibleSummary: ['Live subscriptions'],
     },
   ],
 };
