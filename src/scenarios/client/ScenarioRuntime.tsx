@@ -36,6 +36,14 @@ type RuntimeSnapshot = {
   occurrences: Occurrence[];
 };
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
@@ -56,7 +64,7 @@ export class ScenarioRuntime {
 
   constructor(bootstrap: ScenarioBootstrap) {
     this.bootstrap = bootstrap;
-    const hydration = Promise.withResolvers<void>();
+    const hydration = deferred();
     this.hydrationPromise = hydration.promise;
     this.resolveHydration = hydration.resolve;
     const hydrationReleased = bootstrap.milestones
