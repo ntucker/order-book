@@ -5,7 +5,9 @@ import { memo, useEffect, useRef, useState } from 'react';
 
 import { useElementSize } from '@/hooks/useElementSize';
 import { formatNumber, formatTime } from '@/lib/format';
-import { getSymbolInfo, getTrades, type Trade } from '@/resources';
+import { type Trade } from '@/resources';
+import { useScenarioOccurrence } from '@/scenarios/client/ScenarioRuntime';
+import { useMarketDataEndpoints } from '@/scenarios/resources/ResourceCatalog';
 
 import Panel from '../panel/Panel';
 import styles from './TradesPanel.module.css';
@@ -46,9 +48,14 @@ const TradeRow = memo(function TradeRow({
 });
 
 export default function TradesPanel({ symbol }: { symbol: string }) {
+  const { getSymbolInfo, getTrades } = useMarketDataEndpoints();
   const info = useSuspense(getSymbolInfo, { symbol });
   const feed = useLive(getTrades, { symbol });
   const [bodyRef, size] = useElementSize<HTMLDivElement>();
+  useScenarioOccurrence(bodyRef, {
+    occurrenceId: 'trades-panel',
+    entityPaths: [{ key: 'TradeFeed', pk: symbol }],
+  });
   const seen = useRef(new Set<number>());
   const primed = useRef(false);
   const [freshIds, setFreshIds] = useState<Set<number>>(() => new Set());

@@ -11,7 +11,8 @@ import {
   type CumulativeLevel,
 } from '@/lib/book';
 import { formatBps, formatNumber, formatTick } from '@/lib/format';
-import { getOrderBook, getSymbolInfo, getTicker } from '@/resources';
+import { useScenarioOccurrence } from '@/scenarios/client/ScenarioRuntime';
+import { useMarketDataEndpoints } from '@/scenarios/resources/ResourceCatalog';
 
 import { useElementSize } from '@/hooks/useElementSize';
 
@@ -101,12 +102,26 @@ function ModeIcon({ mode }: { mode: ViewMode }) {
 }
 
 export default function OrderBookPanel({ symbol }: { symbol: string }) {
+  const { getOrderBook, getSymbolInfo, getTicker } =
+    useMarketDataEndpoints();
   const info = useSuspense(getSymbolInfo, { symbol });
   const book = useLive(getOrderBook, { symbol });
   const ticker = useLive(getTicker, { symbol });
   const [groupMult, setGroupMult] = useState<string>('1');
   const [mode, setMode] = useState<ViewMode>('both');
   const [bodyRef, size] = useElementSize<HTMLDivElement>();
+  const midRef = useRef<HTMLSpanElement>(null);
+  useScenarioOccurrence(bodyRef, {
+    occurrenceId: 'book-panel',
+    entityPaths: [{ key: 'OrderBook', pk: symbol }],
+  });
+  useScenarioOccurrence(midRef, {
+    occurrenceId: 'book-mid-price',
+    entityPaths: [
+      { key: 'OrderBook', pk: symbol },
+      { key: 'Ticker', pk: symbol },
+    ],
+  });
 
   const tick = info.tickSize * Number(groupMult);
   const rowsPerSide = useMemo(() => {
@@ -218,7 +233,7 @@ export default function OrderBookPanel({ symbol }: { symbol: string }) {
             </div>
           ) : null}
           <div className={styles.spread}>
-            <span className={`${styles.mid} ${dirClass}`}>
+            <span ref={midRef} className={`${styles.mid} ${dirClass}`}>
               <Triangle direction={ticker.direction} />
               {formatNumber(book.midPrice, info.priceDecimals)}
             </span>

@@ -2,10 +2,13 @@
 
 import { useLive } from '@data-client/react';
 import Link from 'next/link';
+import { useRef } from 'react';
 
 import { formatNumber, formatSignedPercent } from '@/lib/format';
 import { splitSymbol, WATCHLIST } from '@/lib/symbols';
-import { getTicker, getTickers, type Ticker } from '@/resources';
+import { type Ticker } from '@/resources';
+import { useScenarioOccurrence } from '@/scenarios/client/ScenarioRuntime';
+import { useMarketDataEndpoints } from '@/scenarios/resources/ResourceCatalog';
 
 import Panel from '../panel/Panel';
 import styles from './Watchlist.module.css';
@@ -19,6 +22,7 @@ function symbolsFor(current: string): string[] {
 type NavProps = {
   onNavigate: (symbol: string) => void;
   pendingSymbol: string | null;
+  hrefForSymbol: (symbol: string) => string;
 };
 
 function Row({
@@ -27,11 +31,22 @@ function Row({
   variant,
   onNavigate,
   pendingSymbol,
+  hrefForSymbol,
 }: NavProps & {
   ticker: Ticker;
   current: string;
   variant: 'row' | 'chip';
 }) {
+  const priceRef = useRef<HTMLSpanElement>(null);
+  useScenarioOccurrence(priceRef, {
+    occurrenceId:
+      variant === 'chip' && ticker.symbol === 'BTCUSDT'
+        ? 'watchlist-btc-price-mobile'
+        : ticker.symbol === 'BTCUSDT'
+          ? 'watchlist-btc-price'
+          : `watchlist-${ticker.symbol.toLowerCase()}-${variant}`,
+    entityPaths: [{ key: 'Ticker', pk: ticker.symbol }],
+  });
   const [base, quote] = splitSymbol(ticker.symbol);
   const active = ticker.symbol === current;
   const pending = ticker.symbol === pendingSymbol;
@@ -50,7 +65,7 @@ function Row({
 
   return (
     <Link
-      href={`/${ticker.symbol}`}
+      href={hrefForSymbol(ticker.symbol)}
       onNavigate={(e) => {
         e.preventDefault();
         onNavigate(ticker.symbol);
@@ -70,7 +85,11 @@ function Row({
           <span className={styles.quote}>/{quote}</span>
         </span>
       )}
-      <span className={`${styles.price} ${flash ?? ''}`} key={ticker.direction}>
+      <span
+        ref={priceRef}
+        className={`${styles.price} ${flash ?? ''}`}
+        key={ticker.direction}
+      >
         {formatNumber(ticker.lastPrice, ticker.lastPrice >= 100 ? 2 : 4)}
       </span>
       <span className={`${styles.pct} ${up ? styles.up : styles.down}`}>
@@ -85,10 +104,12 @@ export default function Watchlist({
   variant = 'rail',
   onNavigate,
   pendingSymbol,
+  hrefForSymbol,
 }: NavProps & {
   current: string;
   variant?: 'rail' | 'chips';
 }) {
+  const { getTicker, getTickers } = useMarketDataEndpoints();
   const symbols = symbolsFor(current);
   const watch = useLive(getTickers, { symbols: [...WATCHLIST] });
   const extraNeeded = !(WATCHLIST as readonly string[]).includes(current);
@@ -111,6 +132,7 @@ export default function Watchlist({
             variant="chip"
             onNavigate={onNavigate}
             pendingSymbol={pendingSymbol}
+            hrefForSymbol={hrefForSymbol}
           />
         ))}
       </nav>
@@ -128,6 +150,7 @@ export default function Watchlist({
             variant="row"
             onNavigate={onNavigate}
             pendingSymbol={pendingSymbol}
+            hrefForSymbol={hrefForSymbol}
           />
         ))}
       </nav>

@@ -6,7 +6,8 @@ import { useMemo, useState, type MouseEvent } from 'react';
 import { useElementSize } from '@/hooks/useElementSize';
 import { accumulate, downsample } from '@/lib/book';
 import { formatNumber } from '@/lib/format';
-import { getOrderBook, getSymbolInfo } from '@/resources';
+import { useScenarioOccurrence } from '@/scenarios/client/ScenarioRuntime';
+import { useMarketDataEndpoints } from '@/scenarios/resources/ResourceCatalog';
 
 import Panel from '../panel/Panel';
 import styles from './DepthChart.module.css';
@@ -29,9 +30,14 @@ function stepArea(
 }
 
 export default function DepthChart({ symbol }: { symbol: string }) {
+  const { getOrderBook, getSymbolInfo } = useMarketDataEndpoints();
   const info = useSuspense(getSymbolInfo, { symbol });
   const book = useLive(getOrderBook, { symbol });
   const [ref, size] = useElementSize<HTMLDivElement>();
+  useScenarioOccurrence(ref, {
+    occurrenceId: 'depth-panel',
+    entityPaths: [{ key: 'OrderBook', pk: symbol }],
+  });
   const [hover, setHover] = useState<{
     x: number;
     y: number;
