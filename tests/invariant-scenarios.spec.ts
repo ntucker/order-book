@@ -123,6 +123,12 @@ test('outcome C records first-wave fetches only, then the waterfall', async ({
   const { runId } = await openRun(page, 'handoff-outcome-c');
   await advance(page, 1, 3);
   await advance(page, 2, 3);
+  await expect
+    .poll(async () => {
+      const mid = await ledger(page, runId);
+      return started(mid.events, 'symbol-info').length;
+    })
+    .toBeGreaterThan(0);
   const mid = await ledger(page, runId);
   expect(started(mid.events, 'symbol-info').length).toBeGreaterThan(0);
   expect(started(mid.events, 'tickers').length).toBeGreaterThan(0);

@@ -108,12 +108,9 @@ export const handoffOutcomeCScenario: ScenarioDefinition = {
       id: 'panels-wake-and-fetch',
       title: 'Panels wake and fetch',
       explanation:
-        'Every panel gate opens with the store still empty. Panels that suspend on symbol info or the watchlist list start those requests. Chained reads (ticker, book, trades, candles) cannot start until symbol info returns — that is the waterfall, recorded honestly.',
+        'Every panel gate opens with the store still empty. Panels that suspend on symbol info or the watchlist list start those requests. Chained reads (ticker, book, trades, candles) cannot start until symbol info returns — that is the waterfall, recorded honestly. CompletesWhen is the wake command, not those fetches: Chrome HTTP/1.1 fills with the gated first-wave GETs, so a request-started waiter would leave Advance disabled. Playwright asserts the waterfall from the server ledger over Node HTTP.',
       releases: [...firstWavePanels, ...secondWavePanels],
-      completesWhen: {
-        kind: 'request-started',
-        sources: ['symbol-info', 'tickers'],
-      },
+      completesWhen: { kind: 'command-applied' },
       storeSummary: ['Fetches in flight'],
       visibleSummary: ['Hooks ran; still skeletons'],
     },
