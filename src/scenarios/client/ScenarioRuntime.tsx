@@ -46,7 +46,20 @@ function deferred() {
 
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame !== 'function') {
+      setTimeout(done, 0);
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(done);
+    });
+    setTimeout(done, 100);
   });
 }
 
@@ -153,7 +166,7 @@ export class ScenarioRuntime {
         await afterPaint();
         return;
       case 'dashboard-hydrated':
-        await this.hydrationPromise;
+        this.resolveHydration();
         this.markHydrated();
         await afterPaint();
         return;
