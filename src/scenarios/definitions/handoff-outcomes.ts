@@ -100,7 +100,7 @@ export const handoffOutcomeCScenario: ScenarioDefinition = {
       explanation:
         'The client takes over before any snapshot is released. Panels are still gated, so hooks have not run yet — the analog of the 101-byte blob arriving with the frame.',
       releases: [hydrateDashboard],
-      completesWhen: { kind: 'command-applied' },
+      completesWhen: { kind: 'dashboard-hydrated' },
       storeSummary: ['Empty client store'],
       visibleSummary: ['Skeletons only'],
     },

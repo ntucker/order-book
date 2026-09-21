@@ -167,7 +167,19 @@ export class ScenarioRuntime {
         return;
       case 'dashboard-hydrated':
         this.resolveHydration();
-        this.markHydrated();
+        try {
+          await this.waitUntil(() => this.snapshotValue.hydrated, 15_000);
+        } catch (caught) {
+          if (
+            caught instanceof Error &&
+            caught.message === 'Timed out waiting for scenario condition'
+          ) {
+            throw new Error(
+              'Timed out waiting for DashboardHydratedMarker after hydrate-dashboard',
+            );
+          }
+          throw caught;
+        }
         await afterPaint();
         return;
       case 'panel-visible':
