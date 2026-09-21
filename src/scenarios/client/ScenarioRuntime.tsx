@@ -7,6 +7,7 @@ import {
   useEffect,
   useEffectEvent,
   useMemo,
+  useState,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -18,6 +19,7 @@ import type {
   ScenarioBootstrap,
   ScenarioEvent,
   ScenarioOccurrenceDescriptor,
+  ScenarioRelease,
   ScenarioRequestKind,
   ScenarioStatus,
 } from '../shared/types';
@@ -42,6 +44,21 @@ function deferred() {
     resolve = done;
   });
   return { promise, resolve };
+}
+
+export function releasedGatesFromMilestones(
+  milestones: ScenarioBootstrap['milestones'],
+  cursor: number,
+): Set<string> {
+  const released = new Set<string>();
+  for (const milestone of milestones.slice(0, cursor)) {
+    for (const release of milestone.releases) {
+      if (release.kind === 'response' || release.kind === 'panel') {
+        released.add(release.gateId);
+      }
+    }
+  }
+  return released;
 }
 
 function afterPaint(): Promise<void> {
@@ -71,6 +88,7 @@ export class ScenarioRuntime {
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
   private panelPromises = new Map<string, Promise<unknown>>();
+  private releasedGates: Set<string>;
   private elementWaiters = new Set<() => void>();
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
@@ -82,6 +100,10 @@ export class ScenarioRuntime {
     const hydration = deferred();
     this.hydrationPromise = hydration.promise;
     this.resolveHydration = hydration.resolve;
+    this.releasedGates = releasedGatesFromMilestones(
+      bootstrap.milestones,
+      bootstrap.cursor,
+    );
     const hydrationReleased = bootstrap.milestones
       .slice(0, bootstrap.cursor)
       .some((milestone) =>
@@ -134,6 +156,7 @@ export class ScenarioRuntime {
       cursor: result.cursor,
       events: this.mergeEvents(this.snapshotValue.events, result.events),
     };
+    this.noteReleasedGates(result.milestone.releases);
     this.emit();
     for (const command of result.clientCommands) this.applyCommand(command);
     return result;
@@ -298,24 +321,18 @@ export class ScenarioRuntime {
   }
 
   getPanelGatePromise(panelId: string): Promise<unknown> {
+    const gateId = `panel:${panelId}`;
+    if (this.releasedGates.has(gateId)) {
+      return Promise.resolve({ panelId, released: true });
+    }
     let promise = this.panelPromises.get(panelId);
     if (promise) return promise;
-    const requestOrigin =
-      typeof window === 'undefined'
-        ? this.bootstrap.origin
-        : window.location.origin;
-    promise = fetch(
-      `${requestOrigin}/api/scenarios/${this.bootstrap.runId}/panel/${panelId}`,
-      { cache: 'no-store' },
-    )
-      .then((response) => {
-        if (!response.ok) throw new Error(`Panel gate failed: ${panelId}`);
-        return response.json();
-      })
-      .catch((error) => {
-        this.panelPromises.delete(panelId);
-        throw error;
-      });
+    // Local waiters only. A hanging GET to this Next server deadlocks
+    // `next dev` (the page render occupies the only request slot).
+    promise = this.waitUntil(() => this.releasedGates.has(gateId)).then(() => ({
+      panelId,
+      released: true,
+    }));
     this.panelPromises.set(panelId, promise);
     return promise;
   }
@@ -330,6 +347,14 @@ export class ScenarioRuntime {
     for (const disconnect of this.elementWaiters) disconnect();
     this.elementWaiters.clear();
     for (const listener of listeners) listener();
+  }
+
+  private noteReleasedGates(releases: ScenarioRelease[]) {
+    for (const release of releases) {
+      if (release.kind === 'response' || release.kind === 'panel') {
+        this.releasedGates.add(release.gateId);
+      }
+    }
   }
 
   private applyCommand(command: ClientScenarioCommand) {
@@ -528,14 +553,37 @@ export function useScenarioNavigation(navigate: (symbol: string) => void) {
 }
 
 export function ScenarioHydrationGate({ children }: { children: ReactNode }) {
-  const runtime = useRequiredScenarioRuntime();
-  if (typeof window !== 'undefined') use(runtime.hydrationPromise);
+  useRequiredScenarioRuntime();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  // Same frame on server and the first client pass so hydration matches.
+  // Mounting Provider only after paint keeps SSR from self-fetching gated
+  // panel/data routes (that hang until Advance and deadlock `next dev`).
+  if (!mounted) {
+    return (
+      <div
+        className="scenario-dashboard-frame"
+        aria-label="Dashboard loading"
+      />
+    );
+  }
   return children;
 }
 
 export function DashboardHydratedMarker() {
   const runtime = useScenarioRuntime();
-  useEffect(() => runtime?.markHydrated(), [runtime]);
+  useEffect(() => {
+    if (!runtime) return;
+    let cancelled = false;
+    void runtime.hydrationPromise.then(() => {
+      if (!cancelled) runtime.markHydrated();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
   return null;
 }
 
@@ -547,6 +595,9 @@ export function ScenarioPanelGate({
   children?: ReactNode;
 }) {
   const runtime = useScenarioRuntime();
+  if (typeof window === 'undefined') {
+    return runtime ? <i hidden data-scenario-panel-pending={panelId} /> : children;
+  }
   if (runtime) use(runtime.getPanelGatePromise(panelId));
   return (
     <>

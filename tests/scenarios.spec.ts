@@ -203,6 +203,26 @@ test('scenario launcher creates an isolated run', async ({ page }) => {
     .getByRole('button', { name: /Open scenario/ })
     .click();
   await expect(page).toHaveURL(/\/scenarios\/streamed-reveal\/.+\/BTCUSDT$/);
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.getByText('0 / 6')).toBeVisible();
+  await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
+  await expect(page.getByText('1 / 6')).toBeVisible();
+  await expect(page.getByLabel('BTCUSDT ticker')).toBeVisible();
+});
+
+test('scenario run document finishes loading without waiting on gates', async ({
+  page,
+}) => {
+  const runId = crypto.randomUUID();
+  const started = Date.now();
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'load',
+    timeout: 15_000,
+  });
+  expect(Date.now() - started).toBeLessThan(15_000);
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.getByText('0 / 6')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Advance 1 milestone' })).toBeEnabled();
 });
 
 test('older scripted book data cannot regress the normalized entity', async ({

@@ -5,6 +5,8 @@ import ScenarioApp from '@/scenarios/client/ScenarioApp';
 import { getOrCreateScenarioSession } from '@/scenarios/server/registry';
 import type { ScenarioBootstrap } from '@/scenarios/shared/types';
 
+export const dynamic = 'force-dynamic';
+
 function trustedScenarioOrigin(): string {
   const configured =
     process.env.SCENARIO_SERVER_ORIGIN ??
