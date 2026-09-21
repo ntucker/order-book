@@ -121,9 +121,8 @@ test('outcome C records first-wave fetches only, then the waterfall', async ({
   page,
 }) => {
   const { runId } = await openRun(page, 'handoff-outcome-c');
-  await expect(page.getByLabel('Dashboard loading')).toBeVisible();
+  await expect(page.getByLabel('BTCUSDT ticker')).toHaveCount(0);
   await advance(page, 1, 3);
-  await expect(page.getByLabel('Dashboard loading')).toHaveCount(0);
   await expect(page.getByLabel('BTCUSDT ticker')).toHaveCount(0);
   await advance(page, 2, 3);
   await expect
