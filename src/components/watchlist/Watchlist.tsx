@@ -88,7 +88,7 @@ function Row({
       <span
         ref={priceRef}
         className={`${styles.price} ${flash ?? ''}`}
-        key={ticker.direction}
+        key={`${ticker.symbol}-${ticker.direction}`}
       >
         {formatNumber(ticker.lastPrice, ticker.lastPrice >= 100 ? 2 : 4)}
       </span>

@@ -41,8 +41,8 @@ function Board({
     >
       <div className={styles.head}>
         <span />
-        {columns.map((column) => (
-          <span className={styles.time} key={column}>
+        {columns.map((column, index) => (
+          <span className={styles.time} key={`${column}-${index}`}>
             {column}
           </span>
         ))}
