@@ -256,17 +256,59 @@ test('scenario launcher creates an isolated run', async ({ page }) => {
       name: 'Deterministic order-book scenarios',
     }),
   ).toBeVisible();
+  const documentRequests: string[] = [];
+  page.on('request', (request) => {
+    if (
+      request.resourceType() === 'document' &&
+      request.url().includes('/scenarios/streamed-reveal/')
+    ) {
+      documentRequests.push(request.url());
+    }
+  });
   await page
     .getByRole('article')
     .filter({ hasText: 'Streamed reveal and handoff' })
-    .getByRole('button', { name: /Open scenario/ })
+    .getByRole('link', { name: /Open scenario/ })
     .click();
   await expect(page).toHaveURL(/\/scenarios\/streamed-reveal\/.+\/BTCUSDT$/);
+  expect(
+    documentRequests.some((url) =>
+      /\/scenarios\/streamed-reveal\/[0-9a-f-]+\/BTCUSDT/i.test(url),
+    ),
+    'launcher must hard-navigate (full document load)',
+  ).toBeTruthy();
   await expect(page.getByText('Time stopped')).toBeVisible();
   await expect(page.getByText('0 / 6')).toBeVisible();
   await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
   await expect(page.getByText('1 / 6')).toBeVisible();
   await expect(page.getByLabel('BTCUSDT ticker')).toBeVisible();
+});
+
+test('scenario document uses streamed SSR handoff, not a client-only provider', async ({
+  page,
+  baseURL,
+}) => {
+  const runId = crypto.randomUUID();
+  const response = await page.request.get(
+    `${baseURL}/scenarios/streamed-reveal/${runId}/BTCUSDT`,
+    { headers: { 'Accept-Encoding': 'identity' } },
+  );
+  expect(response.ok()).toBeTruthy();
+  const html = await response.text();
+  expect(html).toContain('id="data-client-data"');
+  expect(html).toContain('Deterministic scenario');
+  expect(html).toContain('data-scenario-dashboard');
+  expect(html).not.toContain('100.00');
+
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'load',
+  });
+  await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
+  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
+  await page.reload({ waitUntil: 'load' });
+  const reloaded = await page.content();
+  expect(reloaded).toContain('id="data-client-data"');
+  expect(reloaded).toContain('100.00');
 });
 
 test('scenario run document finishes loading without waiting on gates', async ({

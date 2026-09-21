@@ -319,6 +319,10 @@ export class ScenarioRuntime {
     });
   }
 
+  isPanelReleased(panelId: string) {
+    return this.releasedGates.has(`panel:${panelId}`);
+  }
+
   getPanelGatePromise(panelId: string): Promise<unknown> {
     const cached = this.panelPromises.get(panelId);
     if (cached) return cached;
@@ -337,6 +341,10 @@ export class ScenarioRuntime {
 
   attach() {
     this.disposed = false;
+    // cleanup() rejects in-flight waitUntil promises. A getPanelGatePromise
+    // call while disposed would cache that rejection; drop it so attach
+    // can wait for the next Advance.
+    this.panelPromises.clear();
   }
 
   cleanup() {
@@ -588,13 +596,17 @@ export function ScenarioPanelGate({
   children?: ReactNode;
 }) {
   const runtime = useScenarioRuntime();
-  if (typeof window === 'undefined') {
-    return runtime ? <i hidden data-scenario-panel-pending={panelId} /> : children;
+  if (!runtime) return children;
+  // Closed gates must not suspend the SSR document — `load` has to finish
+  // so Advance can run. Released gates render children so useSuspense
+  // can stream fixture HTML into the Next/Fizz response.
+  if (typeof window === 'undefined' && !runtime.isPanelReleased(panelId)) {
+    return <i hidden data-scenario-panel-pending={panelId} />;
   }
-  if (runtime) use(runtime.getPanelGatePromise(panelId));
+  use(runtime.getPanelGatePromise(panelId));
   return (
     <>
-      {runtime ? <i hidden data-scenario-panel={panelId} /> : null}
+      <i hidden data-scenario-panel={panelId} />
       {children}
     </>
   );

@@ -1,7 +1,3 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-
 import { POSTURE_LABEL } from '../shared/posture';
 import type { ScenarioPosture } from '../shared/types';
 import ScenarioDiagram from './ScenarioDiagram';
@@ -17,7 +13,6 @@ export default function ScenarioLauncher({
     symbol: string;
   }[];
 }) {
-  const router = useRouter();
   return (
     <section className={styles.page}>
       <header className={styles.header}>
@@ -56,16 +51,12 @@ export default function ScenarioLauncher({
             </div>
             <h2>{scenario.title}</h2>
             <ScenarioDiagram id={scenario.id} />
-            <button
-              type="button"
-              onClick={() =>
-                router.push(
-                  `/scenarios/${scenario.id}/${crypto.randomUUID()}/${scenario.symbol}`,
-                )
-              }
+            <a
+              className={styles.open}
+              href={`/scenarios/${scenario.id}/new/${scenario.symbol}`}
             >
               Open scenario <span aria-hidden="true">→</span>
-            </button>
+            </a>
           </article>
         ))}
       </div>

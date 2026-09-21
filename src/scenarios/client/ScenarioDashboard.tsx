@@ -1,6 +1,6 @@
 'use client';
 
-import { DataProvider } from '@data-client/react';
+import { DataProvider } from '@data-client/react/nextjs';
 import { useMemo } from 'react';
 
 import getManagers from '@/app/getManagers';

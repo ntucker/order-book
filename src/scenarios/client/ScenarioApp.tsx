@@ -1,19 +1,11 @@
 'use client';
 
-import { Suspense, useSyncExternalStore } from 'react';
+import { Suspense } from 'react';
 
 import type { ScenarioBootstrap } from '../shared/types';
 import ScenarioConsole from '../ui/ScenarioConsole';
 import ScenarioDashboard from './ScenarioDashboard';
 import { ScenarioRuntimeProvider } from './ScenarioRuntime';
-
-function subscribeNever() {
-  return () => {};
-}
-
-function useClientDashboard() {
-  return useSyncExternalStore(subscribeNever, () => true, () => false);
-}
 
 function DashboardLoading() {
   return (
@@ -33,18 +25,12 @@ export default function ScenarioApp({
   bootstrap: ScenarioBootstrap;
   symbol: string;
 }) {
-  const dashboardReady = useClientDashboard();
-
   return (
     <ScenarioRuntimeProvider bootstrap={bootstrap}>
       <div className="scenario-page">
-        {dashboardReady ? (
-          <Suspense fallback={<DashboardLoading />}>
-            <ScenarioDashboard bootstrap={bootstrap} symbol={symbol} />
-          </Suspense>
-        ) : (
-          <DashboardLoading />
-        )}
+        <Suspense fallback={<DashboardLoading />}>
+          <ScenarioDashboard bootstrap={bootstrap} symbol={symbol} />
+        </Suspense>
         <ScenarioConsole />
       </div>
     </ScenarioRuntimeProvider>

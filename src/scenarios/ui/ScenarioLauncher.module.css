@@ -154,15 +154,15 @@
   letter-spacing: -0.02em;
 }
 
-.card button {
+.open {
   margin-top: auto;
   padding-top: 16px;
   color: var(--accent);
   font: 12px/1 var(--font-num);
 }
 
-.card button:hover,
-.card button:focus-visible {
+.open:hover,
+.open:focus-visible {
   color: var(--text);
 }
 
