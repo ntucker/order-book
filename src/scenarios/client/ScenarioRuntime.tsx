@@ -71,6 +71,7 @@ export class ScenarioRuntime {
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
   private panelPromises = new Map<string, Promise<unknown>>();
+  private elementWaiters = new Set<() => void>();
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
   private navigate?: (symbol: string) => void;
@@ -321,10 +322,14 @@ export class ScenarioRuntime {
 
   cleanup() {
     this.disposed = true;
+    const listeners = [...this.listeners];
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
     this.panelPromises.clear();
+    for (const disconnect of this.elementWaiters) disconnect();
+    this.elementWaiters.clear();
+    for (const listener of listeners) listener();
   }
 
   private applyCommand(command: ClientScenarioCommand) {
@@ -387,15 +392,32 @@ export class ScenarioRuntime {
   }
 
   private waitForElement(selector: string): Promise<Element> {
+    if (this.disposed) {
+      return Promise.reject(new Error('Scenario runtime ended'));
+    }
     const current = document.querySelector(selector);
     if (current) return Promise.resolve(current);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error, element?: Element) => {
+        if (settled) return;
+        settled = true;
+        this.elementWaiters.delete(disconnect);
+        observer.disconnect();
+        if (error) reject(error);
+        else resolve(element as Element);
+      };
+      const disconnect = () => finish(new Error('Scenario runtime ended'));
       const observer = new MutationObserver(() => {
+        if (this.disposed) {
+          finish(new Error('Scenario runtime ended'));
+          return;
+        }
         const element = document.querySelector(selector);
         if (!element) return;
-        observer.disconnect();
-        resolve(element);
+        finish(undefined, element);
       });
+      this.elementWaiters.add(disconnect);
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
@@ -406,11 +428,20 @@ export class ScenarioRuntime {
   private waitForPathname(symbol: string): Promise<void> {
     const deadline = performance.now() + 15_000;
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        if (error) reject(error);
+        else resolve();
+      };
       const check = () => {
-        if (window.location.pathname.endsWith(`/${symbol}`)) {
-          resolve();
+        if (this.disposed) {
+          finish(new Error('Scenario runtime ended'));
+        } else if (window.location.pathname.endsWith(`/${symbol}`)) {
+          finish();
         } else if (performance.now() >= deadline) {
-          reject(new Error(`Navigation to ${symbol} did not commit`));
+          finish(new Error(`Navigation to ${symbol} did not commit`));
         } else {
           requestAnimationFrame(check);
         }
