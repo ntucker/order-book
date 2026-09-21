@@ -64,3 +64,31 @@ export function fixtureResponse(
     }
   }
 }
+
+export function writeOpenFixture(
+  session: ScenarioSession,
+  kind: ScenarioRequestKind,
+  search: URLSearchParams,
+): Response {
+  session.record({
+    milestoneId: session.currentMilestoneId(),
+    phase: 'server',
+    kind: 'request-started',
+    source: kind,
+    summary: `${kind} request started`,
+  });
+  const body = fixtureResponse(session, kind, search);
+  session.record({
+    milestoneId: session.currentMilestoneId(),
+    phase: 'server',
+    kind: 'response-released',
+    source: kind,
+    summary: `${kind} response released`,
+  });
+  return new Response(JSON.stringify(body), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+}

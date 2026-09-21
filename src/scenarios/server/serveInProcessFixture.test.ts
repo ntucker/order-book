@@ -37,13 +37,10 @@ describe('serveInProcessFixture', () => {
     expect(session.isGateReleased('response:ticker')).toBe(false);
 
     const started = Date.now();
-    const response = await serveInProcessFixture(
-      session.runId,
-      'ticker',
-      'symbol=BTCUSDT',
-    );
+    await expect(
+      serveInProcessFixture(session.runId, 'ticker', 'symbol=BTCUSDT'),
+    ).rejects.toMatchObject({ name: 'AbortError' });
     expect(Date.now() - started).toBeLessThan(50);
-    expect(response.status).toBe(425);
     expect(
       session
         .status()

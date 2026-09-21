@@ -34,9 +34,6 @@ function scenarioFetchResponse(
           ? original.search.slice(1)
           : original.search,
       );
-      if (response.status === 425) {
-        throw new DOMException('Response gate closed', 'AbortError');
-      }
       if (!response.ok) throw new NetworkError(response);
       return response;
     }
@@ -63,7 +60,6 @@ function scenarioFetchResponse(
 }
 
 export function createScenarioEndpoints(
-  _origin: string,
   runId: string,
   runtime?: ScenarioRuntime,
 ): MarketDataEndpoints {

@@ -1,5 +1,5 @@
 import type { ScenarioRequestKind } from '../shared/types';
-import { fixtureResponse } from './fixtureResponse';
+import { writeOpenFixture } from './fixtureResponse';
 import type { ScenarioSession } from './ScenarioSession';
 
 const REGISTRY = Symbol.for('order-book.scenario-sessions');
@@ -24,37 +24,9 @@ export async function serveInProcessFixture(
     });
   }
   const gateId = session.scenario.fixtures.responseGates[kind];
-  // SSR cannot wait for Advance — the document must finish so the
-  // client can POST. A still-closed gate is a miss for this render,
-  // not a hang (reload after wake-panels-before-data / readiness m2).
+  // Do not wait — SSR cannot POST Advance until the document finishes.
   if (gateId && !session.isGateReleased(gateId)) {
-    return new Response(JSON.stringify({ error: 'Response gate closed' }), {
-      status: 425,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store',
-      },
-    });
+    throw new DOMException('Response gate closed', 'AbortError');
   }
-  session.record({
-    milestoneId: session.currentMilestoneId(),
-    phase: 'server',
-    kind: 'request-started',
-    source: kind,
-    summary: `${kind} request started`,
-  });
-  const body = fixtureResponse(session, kind, new URLSearchParams(search));
-  session.record({
-    milestoneId: session.currentMilestoneId(),
-    phase: 'server',
-    kind: 'response-released',
-    source: kind,
-    summary: `${kind} response released`,
-  });
-  return new Response(JSON.stringify(body), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
-    },
-  });
+  return writeOpenFixture(session, kind, new URLSearchParams(search));
 }

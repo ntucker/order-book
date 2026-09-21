@@ -61,8 +61,7 @@ export function releasedGatesFromMilestones(
   return released;
 }
 
-/** Response gates a panel must have before SSR can render its children. */
-export const PANEL_SSR_RESPONSE_GATES: Record<string, readonly string[]> = {
+const PANEL_RESPONSES: Record<string, readonly string[]> = {
   watch: ['response:tickers'],
   ticker: ['response:symbol-info', 'response:ticker'],
   book: ['response:symbol-info', 'response:book'],
@@ -71,17 +70,13 @@ export const PANEL_SSR_RESPONSE_GATES: Record<string, readonly string[]> = {
   chart: ['response:symbol-info', 'response:candles'],
 };
 
-function panelCanStream(
+export function canStreamPanel(
   panelId: string,
   released: ReadonlySet<string>,
 ): boolean {
   if (!released.has(`panel:${panelId}`)) return false;
-  const gates = PANEL_SSR_RESPONSE_GATES[panelId];
-  if (!gates) return true;
-  return gates.every((gate) => released.has(gate));
+  return (PANEL_RESPONSES[panelId] ?? []).every((gate) => released.has(gate));
 }
-
-export const canStreamPanel = panelCanStream;
 
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -343,22 +338,17 @@ export class ScenarioRuntime {
     });
   }
 
-  isPanelReleased(panelId: string) {
-    return this.releasedGates.has(`panel:${panelId}`);
-  }
-
   canStreamPanel(panelId: string) {
-    return panelCanStream(panelId, this.releasedGates);
+    if (!this.releasedGates.has(`panel:${panelId}`)) return false;
+    return (PANEL_RESPONSES[panelId] ?? []).every((gate) =>
+      this.releasedGates.has(gate),
+    );
   }
 
   getPanelGatePromise(panelId: string): Promise<unknown> {
     const cached = this.panelPromises.get(panelId);
     if (cached) return cached;
     const gateId = `panel:${panelId}`;
-    // Cache the thenable so `use()` does not see a fresh Promise.resolve
-    // on every render after the gate opens. Never go through waitUntil:
-    // cleanup() rejects those, and a call while disposed would cache
-    // `Scenario runtime ended` so the panel never reveals after attach.
     const promise = this.releasedGates.has(gateId)
       ? Promise.resolve({ panelId, released: true })
       : this.waitForPanelRelease(panelId);
@@ -368,7 +358,6 @@ export class ScenarioRuntime {
 
   attach() {
     this.disposed = false;
-    for (const waiter of this.panelWaiters) waiter();
   }
 
   cleanup() {
@@ -377,9 +366,6 @@ export class ScenarioRuntime {
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
-    // Keep panelPromises and panelWaiters. Rejecting them here (or
-    // caching a dispose rejection) leaves use() holding a dead thenable
-    // after Strict Mode remount / attach().
     for (const disconnect of this.elementWaiters) disconnect();
     this.elementWaiters.clear();
     for (const listener of listeners) listener();
@@ -647,13 +633,9 @@ export function ScenarioPanelGate({
   const runtime = useScenarioRuntime();
   const clientReady = useClientReady();
   if (!runtime) return children;
-  // Closed gates, and released panels whose response gates are still
-  // closed, must match SSR HTML on the first client pass. Rendering
-  // children while a response gate is closed would await waitForGate
-  // during SSR and the document would never load.
-  // After the client snapshot, use() waits for the panel; client HTTP
-  // may wait on the response. Released panels with open responses
-  // stream fixture HTML into the Next/Fizz response.
+  // First client pass must match SSR. Closed panels, and panels whose
+  // response gates are still closed, stay pending so the document can
+  // load. After hydration, use() waits; client HTTP may wait on Advance.
   if (!clientReady && !runtime.canStreamPanel(panelId)) {
     return <i hidden data-scenario-panel-pending={panelId} />;
   }

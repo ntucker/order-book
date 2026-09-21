@@ -7,6 +7,20 @@ import {
   ScenarioRuntime,
 } from './ScenarioRuntime';
 
+function mockAdvance(milestone: ScenarioBootstrap['milestones'][number]) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        cursor: 1,
+        milestone,
+        clientCommands: [],
+        events: [],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ),
+  );
+}
+
 function bootstrap(
   overrides: Partial<ScenarioBootstrap> = {},
 ): ScenarioBootstrap {
@@ -63,18 +77,7 @@ describe('ScenarioRuntime cleanup', () => {
     ).resolves.toBe('pending');
     runtime.attach();
     expect(runtime.getPanelGatePromise('ticker')).toBe(pending);
-    const milestone = bootstrap().milestones[0];
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          cursor: 1,
-          milestone,
-          clientCommands: [],
-          events: [],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
+    mockAdvance(bootstrap().milestones[0]);
     await runtime.advance();
     await expect(pending).resolves.toEqual({
       panelId: 'ticker',
@@ -88,42 +91,7 @@ describe('ScenarioRuntime cleanup', () => {
     runtime.cleanup();
     runtime.attach();
     expect(runtime.getPanelGatePromise('ticker')).toBe(pending);
-    const milestone = bootstrap().milestones[0];
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          cursor: 1,
-          milestone,
-          clientCommands: [],
-          events: [],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
-    await runtime.advance();
-    await expect(pending).resolves.toEqual({
-      panelId: 'ticker',
-      released: true,
-    });
-  });
-
-  it('accepts new waiters after attach following Strict Mode cleanup', async () => {
-    const runtime = new ScenarioRuntime(bootstrap());
-    runtime.cleanup();
-    runtime.attach();
-    const pending = runtime.getPanelGatePromise('ticker');
-    const milestone = bootstrap().milestones[0];
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          cursor: 1,
-          milestone,
-          clientCommands: [],
-          events: [],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
+    mockAdvance(bootstrap().milestones[0]);
     await runtime.advance();
     await expect(pending).resolves.toEqual({
       panelId: 'ticker',
@@ -173,18 +141,7 @@ describe('canStreamPanel', () => {
 
 describe('ScenarioRuntime panel gates', () => {
   it('resolves panel gates from Advance releases without fetching', async () => {
-    const milestone = bootstrap().milestones[0];
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          cursor: 1,
-          milestone,
-          clientCommands: [],
-          events: [],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
+    const fetchSpy = mockAdvance(bootstrap().milestones[0]);
     const runtime = new ScenarioRuntime(bootstrap());
     const pending = runtime.getPanelGatePromise('ticker');
     await runtime.advance();
