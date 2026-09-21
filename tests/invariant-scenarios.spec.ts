@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+import { expect, test } from './fixtures';
 
 const SCENARIOS = [
   { id: 'readiness-from-records', steps: 3 },
@@ -18,20 +20,16 @@ type LedgerEvent = { kind: string; source: string };
 async function openRun(page: Page, scenarioId: string) {
   const runId = crypto.randomUUID();
   const binanceRequests: string[] = [];
-  const errors: string[] = [];
   page.on('request', (request) => {
     if (request.url().includes('binance.vision')) {
       binanceRequests.push(request.url());
     }
   });
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
-  });
   await page.goto(`/scenarios/${scenarioId}/${runId}/BTCUSDT`, {
     waitUntil: 'commit',
   });
   await expect(page.getByText('Time stopped')).toBeVisible();
-  return { runId, binanceRequests, errors };
+  return { runId, binanceRequests };
 }
 
 async function advance(page: Page, step: number, total: number) {
@@ -82,13 +80,12 @@ test('launcher lists lock, record, and option postures', async ({ page }) => {
 
 for (const scenario of SCENARIOS) {
   test(`${scenario.id} completes without Binance traffic`, async ({ page }) => {
-    const { binanceRequests, errors } = await openRun(page, scenario.id);
+    const { binanceRequests } = await openRun(page, scenario.id);
     for (let step = 1; step <= scenario.steps; step += 1) {
       await advance(page, step, scenario.steps);
     }
     await expect(page.getByText('Complete', { exact: true })).toBeVisible();
     expect(binanceRequests).toEqual([]);
-    expect(errors).toEqual([]);
   });
 }
 

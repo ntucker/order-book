@@ -15,7 +15,6 @@ import {
 } from '../client/ScenarioRuntime';
 import { POSTURE_HINT, POSTURE_LABEL } from '../shared/posture';
 import type { CompiledMilestone, ScenarioEvent } from '../shared/types';
-import { diffTableRows } from './diffRows';
 import styles from './ScenarioConsole.module.css';
 
 type Mode = 'manual' | 'auto';
@@ -35,8 +34,38 @@ function milestoneEvents(events: ScenarioEvent[], milestoneId: string) {
   return events.filter((event) => event.milestoneId === milestoneId);
 }
 
+function diffRows(events: ScenarioEvent[]) {
+  return events.flatMap((event) => [
+    ...event.entityDiffs.flatMap((diff) => {
+      const fields = diff.changedFields.length ? diff.changedFields : [undefined];
+      return fields.map((field) => {
+        const path = field?.path.join('.') ?? '';
+        return {
+          label: `${diff.entityKey}:${diff.pk} · ${path || diff.change}`,
+          before: field?.before,
+          after: field?.after,
+        };
+      });
+    }),
+    ...event.endpointDiffs.flatMap((diff) => [
+      ...(diff.result
+        ? [{
+            label: `${diff.endpointKey} · result`,
+            before: diff.result.before,
+            after: diff.result.after,
+          }]
+        : []),
+      ...diff.meta.map((field) => ({
+        label: `${diff.endpointKey} · meta.${field.path.join('.')}`,
+        before: field.before,
+        after: field.after,
+      })),
+    ]),
+  ]);
+}
+
 function DiffTable({ events }: { events: ScenarioEvent[] }) {
-  const rows = diffTableRows(events);
+  const rows = diffRows(events);
   if (!rows.length) {
     return <p className={styles.description}>No normalized values changed.</p>;
   }
@@ -50,15 +79,11 @@ function DiffTable({ events }: { events: ScenarioEvent[] }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.key}>
+        {rows.map((row, index) => (
+          <tr key={index}>
             <td className={styles.diffPath}>{row.label}</td>
-            <td className={styles.diffBefore}>
-              {formatValue(row.diff.before)}
-            </td>
-            <td className={styles.diffAfter}>
-              {formatValue(row.diff.after)}
-            </td>
+            <td className={styles.diffBefore}>{formatValue(row.before)}</td>
+            <td className={styles.diffAfter}>{formatValue(row.after)}</td>
           </tr>
         ))}
       </tbody>
