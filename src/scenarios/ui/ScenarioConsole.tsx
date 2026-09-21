@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   useEffect,
   useEffectEvent,
@@ -209,7 +209,6 @@ function EventInspector({
 
 export default function ScenarioConsole() {
   const runtime = useRequiredScenarioRuntime();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const snapshot = useSyncExternalStore(
     runtime.subscribe,
@@ -377,9 +376,8 @@ export default function ScenarioConsole() {
   }, []);
 
   const restart = () => {
-    const runId = crypto.randomUUID();
-    router.push(
-      `/scenarios/${runtime.bootstrap.scenarioId}/${runId}/${runtime.bootstrap.initialSymbol}`,
+    window.location.assign(
+      `/scenarios/${runtime.bootstrap.scenarioId}/new/${runtime.bootstrap.initialSymbol}`,
     );
   };
 

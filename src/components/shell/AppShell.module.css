@@ -34,10 +34,6 @@
   .main {
     overflow: auto;
   }
-
-  .main:has(:global(.scenario-route)) {
-    overflow: visible;
-  }
 }
 
 .pill {

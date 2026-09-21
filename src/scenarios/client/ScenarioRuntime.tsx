@@ -6,7 +6,8 @@ import {
   useContext,
   useEffect,
   useEffectEvent,
-  useMemo,
+  useRef,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -18,6 +19,7 @@ import type {
   ScenarioBootstrap,
   ScenarioEvent,
   ScenarioOccurrenceDescriptor,
+  ScenarioRelease,
   ScenarioRequestKind,
   ScenarioStatus,
 } from '../shared/types';
@@ -42,6 +44,42 @@ function deferred() {
     resolve = done;
   });
   return { promise, resolve };
+}
+
+function addReleasedGates(target: Set<string>, releases: ScenarioRelease[]) {
+  for (const release of releases) {
+    if (release.kind === 'response' || release.kind === 'panel') {
+      target.add(release.gateId);
+    }
+  }
+}
+
+export function releasedGatesFromMilestones(
+  milestones: ScenarioBootstrap['milestones'],
+  cursor: number,
+): Set<string> {
+  const released = new Set<string>();
+  for (const milestone of milestones.slice(0, cursor)) {
+    addReleasedGates(released, milestone.releases);
+  }
+  return released;
+}
+
+const PANEL_RESPONSES: Record<string, readonly string[]> = {
+  watch: ['response:tickers'],
+  ticker: ['response:symbol-info', 'response:ticker'],
+  book: ['response:symbol-info', 'response:book'],
+  depth: ['response:symbol-info', 'response:book'],
+  trades: ['response:symbol-info', 'response:trades'],
+  chart: ['response:symbol-info', 'response:candles'],
+};
+
+export function canStreamPanel(
+  panelId: string,
+  released: ReadonlySet<string>,
+): boolean {
+  if (!released.has(`panel:${panelId}`)) return false;
+  return (PANEL_RESPONSES[panelId] ?? []).every((gate) => released.has(gate));
 }
 
 function afterPaint(): Promise<void> {
@@ -71,6 +109,8 @@ export class ScenarioRuntime {
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
   private panelPromises = new Map<string, Promise<unknown>>();
+  private panelWaiters = new Set<RuntimeListener>();
+  private releasedGates: Set<string>;
   private elementWaiters = new Set<() => void>();
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
@@ -82,6 +122,10 @@ export class ScenarioRuntime {
     const hydration = deferred();
     this.hydrationPromise = hydration.promise;
     this.resolveHydration = hydration.resolve;
+    this.releasedGates = releasedGatesFromMilestones(
+      bootstrap.milestones,
+      bootstrap.cursor,
+    );
     const hydrationReleased = bootstrap.milestones
       .slice(0, bootstrap.cursor)
       .some((milestone) =>
@@ -134,6 +178,7 @@ export class ScenarioRuntime {
       cursor: result.cursor,
       events: this.mergeEvents(this.snapshotValue.events, result.events),
     };
+    this.noteReleasedGates(result.milestone.releases);
     this.emit();
     for (const command of result.clientCommands) this.applyCommand(command);
     return result;
@@ -297,27 +342,23 @@ export class ScenarioRuntime {
     });
   }
 
+  canStreamPanel(panelId: string) {
+    return canStreamPanel(panelId, this.releasedGates);
+  }
+
   getPanelGatePromise(panelId: string): Promise<unknown> {
-    let promise = this.panelPromises.get(panelId);
-    if (promise) return promise;
-    const requestOrigin =
-      typeof window === 'undefined'
-        ? this.bootstrap.origin
-        : window.location.origin;
-    promise = fetch(
-      `${requestOrigin}/api/scenarios/${this.bootstrap.runId}/panel/${panelId}`,
-      { cache: 'no-store' },
-    )
-      .then((response) => {
-        if (!response.ok) throw new Error(`Panel gate failed: ${panelId}`);
-        return response.json();
-      })
-      .catch((error) => {
-        this.panelPromises.delete(panelId);
-        throw error;
-      });
+    const cached = this.panelPromises.get(panelId);
+    if (cached) return cached;
+    const gateId = `panel:${panelId}`;
+    const promise = this.releasedGates.has(gateId)
+      ? Promise.resolve({ panelId, released: true })
+      : this.waitForPanelRelease(panelId);
     this.panelPromises.set(panelId, promise);
     return promise;
+  }
+
+  attach() {
+    this.disposed = false;
   }
 
   cleanup() {
@@ -326,10 +367,13 @@ export class ScenarioRuntime {
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
-    this.panelPromises.clear();
     for (const disconnect of this.elementWaiters) disconnect();
     this.elementWaiters.clear();
     for (const listener of listeners) listener();
+  }
+
+  private noteReleasedGates(releases: ScenarioRelease[]) {
+    addReleasedGates(this.releasedGates, releases);
   }
 
   private applyCommand(command: ClientScenarioCommand) {
@@ -361,6 +405,21 @@ export class ScenarioRuntime {
 
   private emit() {
     for (const listener of this.listeners) listener();
+    for (const waiter of [...this.panelWaiters]) waiter();
+  }
+
+  private waitForPanelRelease(
+    panelId: string,
+  ): Promise<{ panelId: string; released: true }> {
+    const gateId = `panel:${panelId}`;
+    return new Promise((resolve) => {
+      const check = () => {
+        if (!this.releasedGates.has(gateId)) return;
+        this.panelWaiters.delete(check);
+        resolve({ panelId, released: true });
+      };
+      this.panelWaiters.add(check);
+    });
   }
 
   private waitUntil(test: () => boolean, timeoutMs = Infinity): Promise<void> {
@@ -500,8 +559,19 @@ export function ScenarioRuntimeProvider({
   bootstrap: ScenarioBootstrap;
   children: ReactNode;
 }) {
-  const runtime = useMemo(() => new ScenarioRuntime(bootstrap), [bootstrap]);
-  useEffect(() => () => runtime.cleanup(), [runtime]);
+  const runtimeRef = useRef<ScenarioRuntime | null>(null);
+  if (
+    !runtimeRef.current ||
+    runtimeRef.current.bootstrap.runId !== bootstrap.runId
+  ) {
+    runtimeRef.current?.cleanup();
+    runtimeRef.current = new ScenarioRuntime(bootstrap);
+  }
+  const runtime = runtimeRef.current;
+  useEffect(() => {
+    runtime.attach();
+    return () => runtime.cleanup();
+  }, [runtime]);
   return (
     <ScenarioRuntimeContext value={runtime}>
       {children}
@@ -527,16 +597,27 @@ export function useScenarioNavigation(navigate: (symbol: string) => void) {
   }, [navigate, runtime]);
 }
 
-export function ScenarioHydrationGate({ children }: { children: ReactNode }) {
-  const runtime = useRequiredScenarioRuntime();
-  if (typeof window !== 'undefined') use(runtime.hydrationPromise);
-  return children;
-}
-
 export function DashboardHydratedMarker() {
   const runtime = useScenarioRuntime();
-  useEffect(() => runtime?.markHydrated(), [runtime]);
+  useEffect(() => {
+    if (!runtime) return;
+    let cancelled = false;
+    void runtime.hydrationPromise.then(() => {
+      if (!cancelled) runtime.markHydrated();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [runtime]);
   return null;
+}
+
+function subscribeNever() {
+  return () => {};
+}
+
+function useClientReady() {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
 }
 
 export function ScenarioPanelGate({
@@ -547,10 +628,18 @@ export function ScenarioPanelGate({
   children?: ReactNode;
 }) {
   const runtime = useScenarioRuntime();
-  if (runtime) use(runtime.getPanelGatePromise(panelId));
+  const clientReady = useClientReady();
+  if (!runtime) return children;
+  // First client pass must match SSR. Closed panels, and panels whose
+  // response gates are still closed, stay pending so the document can
+  // load. After hydration, use() waits; client HTTP may wait on Advance.
+  if (!clientReady && !runtime.canStreamPanel(panelId)) {
+    return <i hidden data-scenario-panel-pending={panelId} />;
+  }
+  use(runtime.getPanelGatePromise(panelId));
   return (
     <>
-      {runtime ? <i hidden data-scenario-panel={panelId} /> : null}
+      <i hidden data-scenario-panel={panelId} />
       {children}
     </>
   );

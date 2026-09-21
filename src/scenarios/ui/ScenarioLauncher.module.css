@@ -1,6 +1,6 @@
 .page {
-  min-height: calc(100dvh - 48px);
-  padding: clamp(28px, 6vw, 80px);
+  min-height: 100dvh;
+  padding: 20px 16px 32px;
   background:
     radial-gradient(
       circle at 78% 12%,
@@ -26,34 +26,83 @@
   text-transform: uppercase;
 }
 
-.header h1 {
-  max-width: 680px;
-  margin-top: 14px;
-  font-size: clamp(36px, 7vw, 72px);
-  font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: -0.055em;
+.eyebrow a {
+  color: inherit;
 }
 
-.header p {
-  max-width: 610px;
-  margin-top: 20px;
+.eyebrow a:hover,
+.eyebrow a:focus-visible {
+  color: var(--text);
+}
+
+.header h1 {
+  max-width: 20ch;
+  margin-top: 8px;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.legend {
+  max-width: 720px;
+  margin-top: 14px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  list-style: none;
   color: var(--text-2);
-  font-size: 15px;
-  line-height: 1.6;
+  font: 11px/1.2 var(--font-num);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend li::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+
+.legend li[data-kind='skeleton']::before {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--text-3) 40%, transparent) 0 3px,
+      transparent 3px 5px
+    ),
+    var(--surface-3);
+}
+
+.legend li[data-kind='live']::before {
+  background: var(--bid);
+}
+
+.legend li[data-kind='request']::before {
+  background: var(--accent);
+}
+
+.legend li[data-kind='blank']::before {
+  background: var(--ask);
 }
 
 .grid {
-  max-width: 1100px;
-  margin-top: 56px;
+  width: 100%;
+  margin-top: 20px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 12px;
 }
 
 .card {
-  min-height: 260px;
-  padding: 22px;
+  min-height: 280px;
+  padding: 18px 18px 16px;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
@@ -62,13 +111,20 @@
   background: color-mix(in oklab, var(--surface) 94%, transparent);
 }
 
+.meta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .number {
   color: var(--accent);
   font: 11px/1 var(--font-num);
 }
 
 .posture {
-  margin-top: 10px;
   padding: 3px 7px;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
@@ -92,45 +148,30 @@
 }
 
 .card h2 {
-  margin-top: 18px;
-  font-size: 19px;
+  margin-top: 12px;
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
-.card p {
-  margin-top: 10px;
-  color: var(--text-2);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.card .hint {
-  margin-top: 8px;
-  color: var(--text-3);
-  font-size: 11px;
-}
-
-.card button {
+.open {
   margin-top: auto;
-  padding-top: 24px;
+  padding-top: 16px;
   color: var(--accent);
   font: 12px/1 var(--font-num);
 }
 
-.card button:hover,
-.card button:focus-visible {
+.open:hover,
+.open:focus-visible {
   color: var(--text);
 }
 
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
+@media (max-width: 600px) {
+  .page {
+    padding: 14px 12px 24px;
   }
 
   .card {
-    min-height: 210px;
-  }
-
-  .card h2 {
-    margin-top: 24px;
+    min-height: 240px;
   }
 }

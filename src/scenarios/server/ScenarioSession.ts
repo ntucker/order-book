@@ -36,6 +36,10 @@ export class ScenarioSession {
     this.scenario = scenario;
   }
 
+  isGateReleased(gateId: string) {
+    return this.released.has(gateId);
+  }
+
   waitForGate(gateId: string, signal?: AbortSignal): Promise<void> {
     this.touch();
     if (this.disposed) {

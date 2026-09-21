@@ -83,6 +83,65 @@ test('manual mode advances one visible milestone without Binance traffic', async
   expect(errors).toEqual([]);
 });
 
+test('scenario routes hide the live Order Book topbar', async ({ page }) => {
+  await page.goto('/scenarios');
+  await expect(page.locator('.shell > header')).toBeHidden();
+  const heading = page.getByRole('heading', {
+    name: 'Deterministic order-book scenarios',
+  });
+  await expect(heading).toBeVisible();
+  const box = await heading.boundingBox();
+  expect(box?.y, 'page title sits under leftover nav space').toBeLessThan(72);
+
+  const runId = crypto.randomUUID();
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'commit',
+  });
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.locator('.shell > header')).toBeHidden();
+
+  await page.goto('/BTCUSDT', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('link', { name: 'Order Book' })).toBeVisible();
+});
+
+test('scenario launcher grid adds columns as the viewport grows', async ({
+  page,
+}) => {
+  await page.goto('/scenarios');
+  await expect(page.locator('[data-launcher-grid]')).toBeVisible();
+
+  const measure = async (width: number) => {
+    await page.setViewportSize({ width, height: 900 });
+    return page.locator('[data-launcher-grid]').evaluate((grid) => {
+      const columns = getComputedStyle(grid)
+        .gridTemplateColumns.split(' ')
+        .filter(Boolean).length;
+      const cards = [...grid.querySelectorAll('article')];
+      const gridBox = grid.getBoundingClientRect();
+      const rightmost = cards.reduce((max, card) => {
+        const right = card.getBoundingClientRect().right;
+        return Math.max(max, right);
+      }, 0);
+      return {
+        columns,
+        leftover: gridBox.right - rightmost,
+        gridWidth: gridBox.width,
+      };
+    });
+  };
+
+  const compact = await measure(700);
+  const mid = await measure(1200);
+  const wide = await measure(1680);
+  expect(compact.columns).toBeGreaterThanOrEqual(2);
+  expect(mid.columns).toBeGreaterThan(compact.columns);
+  expect(wide.columns).toBeGreaterThan(mid.columns);
+  expect(wide.columns).toBeGreaterThanOrEqual(5);
+  expect(wide.leftover, 'dead band to the right of the last card').toBeLessThan(
+    24,
+  );
+});
+
 test('scenario launcher scrolls when the list is taller than the viewport', async ({
   page,
 }) => {
@@ -197,13 +256,109 @@ test('scenario launcher creates an isolated run', async ({ page }) => {
       name: 'Deterministic order-book scenarios',
     }),
   ).toBeVisible();
+  const documentRequests: string[] = [];
+  page.on('request', (request) => {
+    if (
+      request.resourceType() === 'document' &&
+      request.url().includes('/scenarios/streamed-reveal/')
+    ) {
+      documentRequests.push(request.url());
+    }
+  });
   await page
     .getByRole('article')
     .filter({ hasText: 'Streamed reveal and handoff' })
-    .getByRole('button', { name: /Open scenario/ })
+    .getByRole('link', { name: /Open scenario/ })
     .click();
   await expect(page).toHaveURL(/\/scenarios\/streamed-reveal\/.+\/BTCUSDT$/);
+  expect(
+    documentRequests.some((url) =>
+      /\/scenarios\/streamed-reveal\/[0-9a-f-]+\/BTCUSDT/i.test(url),
+    ),
+    'launcher must hard-navigate (full document load)',
+  ).toBeTruthy();
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.getByText('0 / 6')).toBeVisible();
+  await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
+  await expect(page.getByText('1 / 6')).toBeVisible();
+  await expect(page.getByLabel('BTCUSDT ticker')).toBeVisible();
 });
+
+test('scenario document uses streamed SSR handoff, not a client-only provider', async ({
+  page,
+  baseURL,
+}) => {
+  const runId = crypto.randomUUID();
+  const response = await page.request.get(
+    `${baseURL}/scenarios/streamed-reveal/${runId}/BTCUSDT`,
+    { headers: { 'Accept-Encoding': 'identity' } },
+  );
+  expect(response.ok()).toBeTruthy();
+  const html = await response.text();
+  expect(html).toContain('id="data-client-data"');
+  expect(html).toContain('Deterministic scenario');
+  expect(html).toContain('data-scenario-dashboard');
+  expect(html).not.toContain('100.00');
+
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'load',
+  });
+  await page.getByRole('button', { name: 'Advance 1 milestone' }).click();
+  await expect(page.getByLabel('BTCUSDT ticker')).toContainText('100.00');
+  await page.reload({ waitUntil: 'load' });
+  const reloaded = await page.content();
+  expect(reloaded).toContain('id="data-client-data"');
+  expect(reloaded).toContain('100.00');
+});
+
+test('scenario run document finishes loading without waiting on gates', async ({
+  page,
+}) => {
+  const runId = crypto.randomUUID();
+  const started = Date.now();
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'load',
+    timeout: 15_000,
+  });
+  expect(Date.now() - started).toBeLessThan(15_000);
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.getByText('0 / 6')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Advance 1 milestone' })).toBeEnabled();
+});
+
+const RELOAD_AFTER_WAKE = [
+  { id: 'readiness-from-records', steps: 2, total: 3 },
+  { id: 'handoff-outcome-c', steps: 2, total: 3 },
+  { id: 'route-w-fetch-now', steps: 3, total: 4 },
+] as const;
+
+for (const scenario of RELOAD_AFTER_WAKE) {
+  test(`reload after ${scenario.id} cursor ${scenario.steps} finishes without waiting on closed response gates`, async ({
+    page,
+  }) => {
+    const runId = crypto.randomUUID();
+    await page.goto(`/scenarios/${scenario.id}/${runId}/BTCUSDT`, {
+      waitUntil: 'load',
+      timeout: 15_000,
+    });
+    const advance = page.getByRole('button', { name: 'Advance 1 milestone' });
+    for (let step = 1; step <= scenario.steps; step += 1) {
+      await expect(advance).toBeEnabled();
+      await advance.click();
+      await expect(page.getByRole('progressbar')).toHaveText(
+        `${step} / ${scenario.total}`,
+      );
+    }
+    const started = Date.now();
+    await page.reload({ waitUntil: 'load', timeout: 15_000 });
+    expect(Date.now() - started).toBeLessThan(15_000);
+    await expect(page.getByText('Time stopped')).toBeVisible();
+    await expect(page.getByRole('progressbar')).toHaveText(
+      `${scenario.steps} / ${scenario.total}`,
+    );
+    await expect(advance).toBeEnabled();
+  });
+}
 
 test('older scripted book data cannot regress the normalized entity', async ({
   page,

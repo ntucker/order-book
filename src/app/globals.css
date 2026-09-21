@@ -105,20 +105,24 @@ button {
 }
 
 .shell:has(.scenario-route) {
+  display: block;
   height: auto;
   min-height: 100dvh;
   overflow: visible;
-  grid-template-rows: 48px auto;
+}
+
+.shell:has(.scenario-route) > header {
+  display: none;
 }
 
 .scenario-route {
-  min-height: calc(100dvh - 48px);
+  min-height: 100dvh;
 }
 
 .scenario-page {
-  min-height: calc(100dvh - 48px);
+  min-height: 100dvh;
   display: grid;
-  grid-template-rows: minmax(520px, calc(100dvh - 364px)) 316px;
+  grid-template-rows: minmax(520px, calc(100dvh - 316px)) 316px;
 }
 
 .scenario-dashboard {
@@ -177,10 +181,6 @@ button {
 @media (max-width: 1279px) {
   .shell {
     overflow: auto;
-  }
-
-  .shell:has(.scenario-route) {
-    overflow: visible;
   }
 
   .scenario-page {

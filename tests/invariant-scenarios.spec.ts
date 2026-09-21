@@ -74,6 +74,10 @@ test('launcher lists lock, record, and option postures', async ({ page }) => {
   await expect(
     page.getByRole('article').filter({ hasText: 'Route H' }),
   ).toHaveAttribute('data-posture', 'option');
+  await expect(page.locator('[data-scenario-diagram]')).toHaveCount(13);
+  await expect(
+    page.getByRole('article').filter({ hasText: 'Watch the shell' }),
+  ).toHaveCount(0);
 });
 
 for (const scenario of SCENARIOS) {

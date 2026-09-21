@@ -5,21 +5,7 @@ import ScenarioApp from '@/scenarios/client/ScenarioApp';
 import { getOrCreateScenarioSession } from '@/scenarios/server/registry';
 import type { ScenarioBootstrap } from '@/scenarios/shared/types';
 
-function trustedScenarioOrigin(): string {
-  const configured =
-    process.env.SCENARIO_SERVER_ORIGIN ??
-    (process.env.NODE_ENV === 'development'
-      ? 'http://127.0.0.1:3000'
-      : undefined);
-  if (!configured) {
-    throw new Error('Production scenarios require SCENARIO_SERVER_ORIGIN');
-  }
-  const origin = new URL(configured);
-  if (origin.protocol !== 'http:' && origin.protocol !== 'https:') {
-    throw new Error('SCENARIO_SERVER_ORIGIN must use HTTP or HTTPS');
-  }
-  return origin.origin;
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
@@ -38,11 +24,8 @@ export default async function ScenarioPage({
   } catch {
     notFound();
   }
-  const origin = trustedScenarioOrigin();
-  const status = session.status();
   const bootstrap: ScenarioBootstrap = {
-    ...status,
-    origin,
+    ...session.status(),
     initialSymbol: session.scenario.initialSymbol,
   };
 

@@ -12,7 +12,6 @@ export default function ScenariosPage() {
   const scenarios = Object.values(scenarioDefinitions).map((scenario) => ({
     id: scenario.id,
     title: scenario.title,
-    summary: scenario.summary,
     posture: scenario.posture,
     symbol: scenario.initialSymbol,
   }));

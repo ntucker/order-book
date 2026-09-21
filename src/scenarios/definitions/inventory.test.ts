@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { listScenarioDefinitions } from '../definitions';
 import { compileScenario } from '../shared/compileScenario';
+import { SCENARIO_DIAGRAM_IDS } from '../ui/scenarioDiagramIds';
 
 const EXPECTED = [
   ['streamed-reveal', 'lock'],
@@ -29,5 +30,8 @@ describe('scenario inventory', () => {
       compileScenario(definition),
     );
     expect(new Set(compiled.map((item) => item.id)).size).toBe(compiled.length);
+    expect([...SCENARIO_DIAGRAM_IDS].sort()).toEqual(
+      definitions.map((definition) => definition.id).sort(),
+    );
   });
 });
