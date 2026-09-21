@@ -31,14 +31,14 @@
 
 .time {
   padding: 0 2px 4px;
-  color: var(--text-3);
+  color: var(--text-2);
   text-align: center;
 }
 
 .label {
   display: flex;
   align-items: center;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
 .cell {

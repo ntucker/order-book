@@ -504,7 +504,7 @@ const DIAGRAMS: Record<(typeof SCENARIO_DIAGRAM_IDS)[number], () => ReactNode> =
 export { SCENARIO_DIAGRAM_IDS };
 
 export default function ScenarioDiagram({ id }: { id: string }) {
-  const Diagram = DIAGRAMS[id];
+  const Diagram = DIAGRAMS[id as keyof typeof DIAGRAMS];
   if (!Diagram) return null;
   return <Diagram />;
 }

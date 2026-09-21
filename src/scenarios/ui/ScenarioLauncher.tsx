@@ -21,7 +21,11 @@ export default function ScenarioLauncher({
   return (
     <section className={styles.page}>
       <header className={styles.header}>
-        <span className={styles.eyebrow}>Reactive Data Client laboratory</span>
+        <span className={styles.eyebrow}>
+          <a href="/BTCUSDT">Live book</a>
+          <span aria-hidden="true"> · </span>
+          Reactive Data Client laboratory
+        </span>
         <h1>Deterministic order-book scenarios</h1>
         <ul className={styles.legend} aria-label="Diagram legend">
           <li data-kind="skeleton">░░░░ skeleton</li>
@@ -31,7 +35,7 @@ export default function ScenarioLauncher({
           <li data-kind="blank">✗ never</li>
         </ul>
       </header>
-      <div className={styles.grid}>
+      <div className={styles.grid} data-launcher-grid="">
         {scenarios.map((scenario, index) => (
           <article
             className={styles.card}

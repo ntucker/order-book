@@ -83,6 +83,65 @@ test('manual mode advances one visible milestone without Binance traffic', async
   expect(errors).toEqual([]);
 });
 
+test('scenario routes hide the live Order Book topbar', async ({ page }) => {
+  await page.goto('/scenarios');
+  await expect(page.locator('.shell > header')).toBeHidden();
+  const heading = page.getByRole('heading', {
+    name: 'Deterministic order-book scenarios',
+  });
+  await expect(heading).toBeVisible();
+  const box = await heading.boundingBox();
+  expect(box?.y, 'page title sits under leftover nav space').toBeLessThan(72);
+
+  const runId = crypto.randomUUID();
+  await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
+    waitUntil: 'commit',
+  });
+  await expect(page.getByText('Time stopped')).toBeVisible();
+  await expect(page.locator('.shell > header')).toBeHidden();
+
+  await page.goto('/BTCUSDT', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('link', { name: 'Order Book' })).toBeVisible();
+});
+
+test('scenario launcher grid adds columns as the viewport grows', async ({
+  page,
+}) => {
+  await page.goto('/scenarios');
+  await expect(page.locator('[data-launcher-grid]')).toBeVisible();
+
+  const measure = async (width: number) => {
+    await page.setViewportSize({ width, height: 900 });
+    return page.locator('[data-launcher-grid]').evaluate((grid) => {
+      const columns = getComputedStyle(grid)
+        .gridTemplateColumns.split(' ')
+        .filter(Boolean).length;
+      const cards = [...grid.querySelectorAll('article')];
+      const gridBox = grid.getBoundingClientRect();
+      const rightmost = cards.reduce((max, card) => {
+        const right = card.getBoundingClientRect().right;
+        return Math.max(max, right);
+      }, 0);
+      return {
+        columns,
+        leftover: gridBox.right - rightmost,
+        gridWidth: gridBox.width,
+      };
+    });
+  };
+
+  const compact = await measure(700);
+  const mid = await measure(1200);
+  const wide = await measure(1680);
+  expect(compact.columns).toBeGreaterThanOrEqual(2);
+  expect(mid.columns).toBeGreaterThan(compact.columns);
+  expect(wide.columns).toBeGreaterThan(mid.columns);
+  expect(wide.columns).toBeGreaterThanOrEqual(5);
+  expect(wide.leftover, 'dead band to the right of the last card').toBeLessThan(
+    24,
+  );
+});
+
 test('scenario launcher scrolls when the list is taller than the viewport', async ({
   page,
 }) => {
