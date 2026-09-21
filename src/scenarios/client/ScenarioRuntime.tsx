@@ -7,6 +7,7 @@ import {
   useEffect,
   useEffectEvent,
   useRef,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -87,6 +88,7 @@ export class ScenarioRuntime {
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
   private panelPromises = new Map<string, Promise<unknown>>();
+  private panelWaiters = new Set<RuntimeListener>();
   private releasedGates: Set<string>;
   private elementWaiters = new Set<() => void>();
   private clientSequence = 0;
@@ -327,24 +329,20 @@ export class ScenarioRuntime {
     const cached = this.panelPromises.get(panelId);
     if (cached) return cached;
     const gateId = `panel:${panelId}`;
-    // Cache the promise so `use()` does not see a fresh Promise.resolve
-    // on every render after the gate opens.
+    // Cache the thenable so `use()` does not see a fresh Promise.resolve
+    // on every render after the gate opens. Never go through waitUntil:
+    // cleanup() rejects those, and a call while disposed would cache
+    // `Scenario runtime ended` so the panel never reveals after attach.
     const promise = this.releasedGates.has(gateId)
       ? Promise.resolve({ panelId, released: true })
-      : this.waitUntil(() => this.releasedGates.has(gateId)).then(() => ({
-          panelId,
-          released: true,
-        }));
+      : this.waitForPanelRelease(panelId);
     this.panelPromises.set(panelId, promise);
     return promise;
   }
 
   attach() {
     this.disposed = false;
-    // cleanup() rejects in-flight waitUntil promises. A getPanelGatePromise
-    // call while disposed would cache that rejection; drop it so attach
-    // can wait for the next Advance.
-    this.panelPromises.clear();
+    for (const waiter of this.panelWaiters) waiter();
   }
 
   cleanup() {
@@ -353,7 +351,9 @@ export class ScenarioRuntime {
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
-    this.panelPromises.clear();
+    // Keep panelPromises and panelWaiters. Rejecting them here (or
+    // caching a dispose rejection) leaves use() holding a dead thenable
+    // after Strict Mode remount / attach().
     for (const disconnect of this.elementWaiters) disconnect();
     this.elementWaiters.clear();
     for (const listener of listeners) listener();
@@ -396,6 +396,21 @@ export class ScenarioRuntime {
 
   private emit() {
     for (const listener of this.listeners) listener();
+    for (const waiter of [...this.panelWaiters]) waiter();
+  }
+
+  private waitForPanelRelease(
+    panelId: string,
+  ): Promise<{ panelId: string; released: true }> {
+    const gateId = `panel:${panelId}`;
+    return new Promise((resolve) => {
+      const check = () => {
+        if (!this.releasedGates.has(gateId)) return;
+        this.panelWaiters.delete(check);
+        resolve({ panelId, released: true });
+      };
+      this.panelWaiters.add(check);
+    });
   }
 
   private waitUntil(test: () => boolean, timeoutMs = Infinity): Promise<void> {
@@ -588,6 +603,14 @@ export function DashboardHydratedMarker() {
   return null;
 }
 
+function subscribeNever() {
+  return () => {};
+}
+
+function useClientReady() {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
+
 export function ScenarioPanelGate({
   panelId,
   children,
@@ -596,11 +619,13 @@ export function ScenarioPanelGate({
   children?: ReactNode;
 }) {
   const runtime = useScenarioRuntime();
+  const clientReady = useClientReady();
   if (!runtime) return children;
-  // Closed gates must not suspend the SSR document — `load` has to finish
-  // so Advance can run. Released gates render children so useSuspense
-  // can stream fixture HTML into the Next/Fizz response.
-  if (typeof window === 'undefined' && !runtime.isPanelReleased(panelId)) {
+  // Closed gates must match SSR HTML on the first client pass so hydration
+  // cannot call use() yet. After the client snapshot, use() waits for Advance.
+  // Released gates render children during SSR so useSuspense can stream
+  // fixture HTML into the Next/Fizz response.
+  if (!runtime.isPanelReleased(panelId) && !clientReady) {
     return <i hidden data-scenario-panel-pending={panelId} />;
   }
   use(runtime.getPanelGatePromise(panelId));

@@ -49,14 +49,44 @@ describe('ScenarioRuntime cleanup', () => {
     await expect(pending).rejects.toThrow('Scenario runtime ended');
   });
 
-  it('does not reuse a rejected gate promise after attach', async () => {
+  it('does not cache a rejected gate promise after dispose', async () => {
     const runtime = new ScenarioRuntime(bootstrap());
     runtime.cleanup();
-    const rejected = runtime.getPanelGatePromise('ticker');
-    await expect(rejected).rejects.toThrow('Scenario runtime ended');
-    runtime.attach();
     const pending = runtime.getPanelGatePromise('ticker');
-    expect(pending).not.toBe(rejected);
+    const settled = pending.then(
+      () => 'resolved' as const,
+      () => 'rejected' as const,
+    );
+    await expect(
+      Promise.race([settled, Promise.resolve('pending' as const)]),
+    ).resolves.toBe('pending');
+    runtime.attach();
+    expect(runtime.getPanelGatePromise('ticker')).toBe(pending);
+    const milestone = bootstrap().milestones[0];
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          cursor: 1,
+          milestone,
+          clientCommands: [],
+          events: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    await runtime.advance();
+    await expect(pending).resolves.toEqual({
+      panelId: 'ticker',
+      released: true,
+    });
+  });
+
+  it('keeps a pre-dispose gate thenable pending through attach', async () => {
+    const runtime = new ScenarioRuntime(bootstrap());
+    const pending = runtime.getPanelGatePromise('ticker');
+    runtime.cleanup();
+    runtime.attach();
+    expect(runtime.getPanelGatePromise('ticker')).toBe(pending);
     const milestone = bootstrap().milestones[0];
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
