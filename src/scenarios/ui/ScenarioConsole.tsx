@@ -14,13 +14,8 @@ import {
   useRequiredScenarioRuntime,
 } from '../client/ScenarioRuntime';
 import { POSTURE_HINT, POSTURE_LABEL } from '../shared/posture';
-import type {
-  CompiledMilestone,
-  EndpointDiff,
-  EntityDiff,
-  ScenarioEvent,
-  ValueDiff,
-} from '../shared/types';
+import type { CompiledMilestone, ScenarioEvent } from '../shared/types';
+import { diffTableRows } from './diffRows';
 import styles from './ScenarioConsole.module.css';
 
 type Mode = 'manual' | 'auto';
@@ -40,51 +35,8 @@ function milestoneEvents(events: ScenarioEvent[], milestoneId: string) {
   return events.filter((event) => event.milestoneId === milestoneId);
 }
 
-function entityRows(diffs: EntityDiff[]) {
-  return diffs.flatMap((diff) =>
-    diff.changedFields.length
-      ? diff.changedFields.map((field) => ({
-          key: `${diff.entityKey}:${diff.pk}.${field.path.join('.')}`,
-          label: `${diff.entityKey}:${diff.pk} · ${field.path.join('.') || diff.change}`,
-          diff: field,
-        }))
-      : [
-          {
-            key: `${diff.entityKey}:${diff.pk}`,
-            label: `${diff.entityKey}:${diff.pk} · ${diff.change}`,
-            diff: {} as ValueDiff,
-          },
-        ],
-  );
-}
-
-function endpointRows(diffs: EndpointDiff[]) {
-  return diffs.flatMap((diff) => [
-    ...(diff.result
-      ? [
-          {
-            key: `${diff.endpointKey}:result`,
-            label: `${diff.endpointKey} · result`,
-            diff: diff.result,
-          },
-        ]
-      : []),
-    ...diff.meta.map((field) => ({
-      key: `${diff.endpointKey}:meta:${field.path.join('.')}`,
-      label: `${diff.endpointKey} · meta.${field.path.join('.')}`,
-      diff: field,
-    })),
-  ]);
-}
-
-function DiffTable({
-  entityDiffs,
-  endpointDiffs,
-}: {
-  entityDiffs: EntityDiff[];
-  endpointDiffs: EndpointDiff[];
-}) {
-  const rows = [...entityRows(entityDiffs), ...endpointRows(endpointDiffs)];
+function DiffTable({ events }: { events: ScenarioEvent[] }) {
+  const rows = diffTableRows(events);
   if (!rows.length) {
     return <p className={styles.description}>No normalized values changed.</p>;
   }
@@ -138,8 +90,6 @@ function EventInspector({
       </div>
     );
   }
-  const entityDiffs = events.flatMap((event) => event.entityDiffs);
-  const endpointDiffs = events.flatMap((event) => event.endpointDiffs);
   const causes = new Map<string, number>();
   for (const event of events) {
     const key = `${event.phase} · ${event.kind}`;
@@ -201,7 +151,7 @@ function EventInspector({
 
       <section className={styles.section}>
         <h4 className={styles.sectionTitle}>Normalized store diff</h4>
-        <DiffTable entityDiffs={entityDiffs} endpointDiffs={endpointDiffs} />
+        <DiffTable events={events} />
       </section>
     </>
   );
