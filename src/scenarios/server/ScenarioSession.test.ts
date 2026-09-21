@@ -21,6 +21,13 @@ describe('ScenarioSession', () => {
     await expect(session.waitForGate('response:ticker')).resolves.toBeUndefined();
   });
 
+  it('reports whether a gate is already released', () => {
+    const session = makeSession();
+    expect(session.isGateReleased('response:ticker')).toBe(false);
+    session.advance({ expectedCursor: 0, commandId: 'one' });
+    expect(session.isGateReleased('response:ticker')).toBe(true);
+  });
+
   it('replays duplicate command ids without advancing twice', () => {
     const session = makeSession();
     const first = session.advance({ expectedCursor: 0, commandId: 'same' });

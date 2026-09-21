@@ -23,6 +23,19 @@ export async function serveInProcessFixture(
       headers: { 'Content-Type': 'application/json' },
     });
   }
+  const gateId = session.scenario.fixtures.responseGates[kind];
+  // SSR cannot wait for Advance — the document must finish so the
+  // client can POST. A still-closed gate is a miss for this render,
+  // not a hang (reload after wake-panels-before-data / readiness m2).
+  if (gateId && !session.isGateReleased(gateId)) {
+    return new Response(JSON.stringify({ error: 'Response gate closed' }), {
+      status: 425,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
   session.record({
     milestoneId: session.currentMilestoneId(),
     phase: 'server',
@@ -30,8 +43,6 @@ export async function serveInProcessFixture(
     source: kind,
     summary: `${kind} request started`,
   });
-  const gateId = session.scenario.fixtures.responseGates[kind];
-  if (gateId) await session.waitForGate(gateId);
   const body = fixtureResponse(session, kind, new URLSearchParams(search));
   session.record({
     milestoneId: session.currentMilestoneId(),

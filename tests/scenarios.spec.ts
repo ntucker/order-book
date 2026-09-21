@@ -326,6 +326,40 @@ test('scenario run document finishes loading without waiting on gates', async ({
   await expect(page.getByRole('button', { name: 'Advance 1 milestone' })).toBeEnabled();
 });
 
+const RELOAD_AFTER_WAKE = [
+  { id: 'readiness-from-records', steps: 2, total: 3 },
+  { id: 'handoff-outcome-c', steps: 2, total: 3 },
+  { id: 'route-w-fetch-now', steps: 3, total: 4 },
+] as const;
+
+for (const scenario of RELOAD_AFTER_WAKE) {
+  test(`reload after ${scenario.id} cursor ${scenario.steps} finishes without waiting on closed response gates`, async ({
+    page,
+  }) => {
+    const runId = crypto.randomUUID();
+    await page.goto(`/scenarios/${scenario.id}/${runId}/BTCUSDT`, {
+      waitUntil: 'load',
+      timeout: 15_000,
+    });
+    const advance = page.getByRole('button', { name: 'Advance 1 milestone' });
+    for (let step = 1; step <= scenario.steps; step += 1) {
+      await expect(advance).toBeEnabled();
+      await advance.click();
+      await expect(page.getByRole('progressbar')).toHaveText(
+        `${step} / ${scenario.total}`,
+      );
+    }
+    const started = Date.now();
+    await page.reload({ waitUntil: 'load', timeout: 15_000 });
+    expect(Date.now() - started).toBeLessThan(15_000);
+    await expect(page.getByText('Time stopped')).toBeVisible();
+    await expect(page.getByRole('progressbar')).toHaveText(
+      `${scenario.steps} / ${scenario.total}`,
+    );
+    await expect(advance).toBeEnabled();
+  });
+}
+
 test('older scripted book data cannot regress the normalized entity', async ({
   page,
 }) => {

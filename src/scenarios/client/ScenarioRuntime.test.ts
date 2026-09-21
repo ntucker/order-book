@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ScenarioBootstrap } from '../shared/types';
 import {
+  canStreamPanel,
   releasedGatesFromMilestones,
   ScenarioRuntime,
 } from './ScenarioRuntime';
@@ -139,6 +140,34 @@ describe('releasedGatesFromMilestones', () => {
       'panel:ticker',
       'response:ticker',
     ]);
+  });
+});
+
+describe('canStreamPanel', () => {
+  it('does not stream a released panel while its response gate is closed', () => {
+    const released = new Set(['panel:ticker', 'response:symbol-info']);
+    expect(canStreamPanel('ticker', released)).toBe(false);
+  });
+
+  it('streams a panel only when its panel and response gates are open', () => {
+    const released = new Set([
+      'panel:ticker',
+      'response:symbol-info',
+      'response:ticker',
+    ]);
+    expect(canStreamPanel('ticker', released)).toBe(true);
+  });
+
+  it('does not stream wake-panels-before-data', () => {
+    const released = new Set([
+      'panel:book',
+      'panel:depth',
+      'panel:trades',
+      'panel:chart',
+      'response:symbol-info',
+    ]);
+    expect(canStreamPanel('book', released)).toBe(false);
+    expect(canStreamPanel('chart', released)).toBe(false);
   });
 });
 

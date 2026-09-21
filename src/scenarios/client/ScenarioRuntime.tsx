@@ -61,6 +61,28 @@ export function releasedGatesFromMilestones(
   return released;
 }
 
+/** Response gates a panel must have before SSR can render its children. */
+export const PANEL_SSR_RESPONSE_GATES: Record<string, readonly string[]> = {
+  watch: ['response:tickers'],
+  ticker: ['response:symbol-info', 'response:ticker'],
+  book: ['response:symbol-info', 'response:book'],
+  depth: ['response:symbol-info', 'response:book'],
+  trades: ['response:symbol-info', 'response:trades'],
+  chart: ['response:symbol-info', 'response:candles'],
+};
+
+function panelCanStream(
+  panelId: string,
+  released: ReadonlySet<string>,
+): boolean {
+  if (!released.has(`panel:${panelId}`)) return false;
+  const gates = PANEL_SSR_RESPONSE_GATES[panelId];
+  if (!gates) return true;
+  return gates.every((gate) => released.has(gate));
+}
+
+export const canStreamPanel = panelCanStream;
+
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
@@ -323,6 +345,10 @@ export class ScenarioRuntime {
 
   isPanelReleased(panelId: string) {
     return this.releasedGates.has(`panel:${panelId}`);
+  }
+
+  canStreamPanel(panelId: string) {
+    return panelCanStream(panelId, this.releasedGates);
   }
 
   getPanelGatePromise(panelId: string): Promise<unknown> {
@@ -621,11 +647,14 @@ export function ScenarioPanelGate({
   const runtime = useScenarioRuntime();
   const clientReady = useClientReady();
   if (!runtime) return children;
-  // Closed gates must match SSR HTML on the first client pass so hydration
-  // cannot call use() yet. After the client snapshot, use() waits for Advance.
-  // Released gates render children during SSR so useSuspense can stream
-  // fixture HTML into the Next/Fizz response.
-  if (!runtime.isPanelReleased(panelId) && !clientReady) {
+  // Closed gates, and released panels whose response gates are still
+  // closed, must match SSR HTML on the first client pass. Rendering
+  // children while a response gate is closed would await waitForGate
+  // during SSR and the document would never load.
+  // After the client snapshot, use() waits for the panel; client HTTP
+  // may wait on the response. Released panels with open responses
+  // stream fixture HTML into the Next/Fizz response.
+  if (!clientReady && !runtime.canStreamPanel(panelId)) {
     return <i hidden data-scenario-panel-pending={panelId} />;
   }
   use(runtime.getPanelGatePromise(panelId));
