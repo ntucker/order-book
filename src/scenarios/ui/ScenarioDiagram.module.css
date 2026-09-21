@@ -176,14 +176,3 @@
   background: var(--surface);
   color: var(--text);
 }
-
-.store {
-  display: grid;
-  gap: 4px;
-}
-
-.arrow {
-  color: var(--text-3);
-  font: 10px/1 var(--font-num);
-  text-align: center;
-}

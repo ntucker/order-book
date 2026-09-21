@@ -166,7 +166,6 @@ export interface ScenarioStatus {
 }
 
 export interface ScenarioBootstrap extends ScenarioStatus {
-  origin: string;
   initialSymbol: string;
 }
 

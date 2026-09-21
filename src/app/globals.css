@@ -183,10 +183,6 @@ button {
     overflow: auto;
   }
 
-  .shell:has(.scenario-route) {
-    overflow: visible;
-  }
-
   .scenario-page {
     grid-template-rows: auto auto;
   }

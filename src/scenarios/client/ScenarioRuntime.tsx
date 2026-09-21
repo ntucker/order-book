@@ -46,17 +46,21 @@ function deferred() {
   return { promise, resolve };
 }
 
+function addReleasedGates(target: Set<string>, releases: ScenarioRelease[]) {
+  for (const release of releases) {
+    if (release.kind === 'response' || release.kind === 'panel') {
+      target.add(release.gateId);
+    }
+  }
+}
+
 export function releasedGatesFromMilestones(
   milestones: ScenarioBootstrap['milestones'],
   cursor: number,
 ): Set<string> {
   const released = new Set<string>();
   for (const milestone of milestones.slice(0, cursor)) {
-    for (const release of milestone.releases) {
-      if (release.kind === 'response' || release.kind === 'panel') {
-        released.add(release.gateId);
-      }
-    }
+    addReleasedGates(released, milestone.releases);
   }
   return released;
 }
@@ -339,10 +343,7 @@ export class ScenarioRuntime {
   }
 
   canStreamPanel(panelId: string) {
-    if (!this.releasedGates.has(`panel:${panelId}`)) return false;
-    return (PANEL_RESPONSES[panelId] ?? []).every((gate) =>
-      this.releasedGates.has(gate),
-    );
+    return canStreamPanel(panelId, this.releasedGates);
   }
 
   getPanelGatePromise(panelId: string): Promise<unknown> {
@@ -372,11 +373,7 @@ export class ScenarioRuntime {
   }
 
   private noteReleasedGates(releases: ScenarioRelease[]) {
-    for (const release of releases) {
-      if (release.kind === 'response' || release.kind === 'panel') {
-        this.releasedGates.add(release.gateId);
-      }
-    }
+    addReleasedGates(this.releasedGates, releases);
   }
 
   private applyCommand(command: ClientScenarioCommand) {

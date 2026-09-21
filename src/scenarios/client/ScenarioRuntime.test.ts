@@ -30,7 +30,6 @@ function bootstrap(
     title: 't',
     posture: 'record',
     cursor: 0,
-    origin: 'http://localhost',
     initialSymbol: 'BTCUSDT',
     milestones: [
       {

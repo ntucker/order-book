@@ -30,9 +30,7 @@ function scenarioFetchResponse(
       const response = await serveInProcessFixture(
         runId,
         kind,
-        original.search.startsWith('?')
-          ? original.search.slice(1)
-          : original.search,
+        original.searchParams.toString(),
       );
       if (!response.ok) throw new NetworkError(response);
       return response;
