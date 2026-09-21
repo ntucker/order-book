@@ -114,6 +114,37 @@ test('scenario launcher scrolls when the list is taller than the viewport', asyn
     .toBeGreaterThan(80);
 });
 
+test('scenario loading frame stays inside the dashboard row', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/scenarios');
+  const measured = await page.evaluate(() => {
+    const main = document.querySelector('main');
+    if (!main) return { overlap: Number.POSITIVE_INFINITY, frameHeight: 0 };
+    main.innerHTML = `
+      <div class="scenario-route">
+        <div class="scenario-page">
+          <div class="scenario-dashboard-frame"></div>
+          <div data-console-row></div>
+        </div>
+      </div>
+    `;
+    const frame = document.querySelector('.scenario-dashboard-frame');
+    const consoleRow = document.querySelector('[data-console-row]');
+    if (!frame || !consoleRow) {
+      return { overlap: Number.POSITIVE_INFINITY, frameHeight: 0 };
+    }
+    const frameBox = frame.getBoundingClientRect();
+    return {
+      overlap: frameBox.bottom - consoleRow.getBoundingClientRect().top,
+      frameHeight: frameBox.height,
+    };
+  });
+  expect(measured.frameHeight).toBeGreaterThan(400);
+  expect(measured.overlap).toBeLessThanOrEqual(0.5);
+});
+
 test('long scenario page scrolls with the document', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 720 });
   const runId = crypto.randomUUID();

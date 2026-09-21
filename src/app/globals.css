@@ -121,13 +121,13 @@ button {
   grid-template-rows: minmax(520px, calc(100dvh - 364px)) 316px;
 }
 
-.scenario-dashboard,
-.scenario-dashboard-frame {
+.scenario-dashboard {
   min-height: 520px;
   height: 100%;
 }
 
 .scenario-dashboard-frame {
+  min-height: 0;
   margin: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
