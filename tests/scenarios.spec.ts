@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+import { expect, test, waitForHydration } from './fixtures';
 
 function documentScrollMetrics(page: Page) {
   return page.evaluate(() => {
@@ -40,14 +42,10 @@ test('manual mode advances one visible milestone without Binance traffic', async
 }) => {
   const runId = crypto.randomUUID();
   const binanceRequests: string[] = [];
-  const errors: string[] = [];
   page.on('request', (request) => {
     if (request.url().includes('binance.vision')) {
       binanceRequests.push(request.url());
     }
-  });
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
   });
 
   await page.goto(`/scenarios/streamed-reveal/${runId}/BTCUSDT`, {
@@ -80,7 +78,6 @@ test('manual mode advances one visible milestone without Binance traffic', async
   ).toBeVisible();
 
   expect(binanceRequests).toEqual([]);
-  expect(errors).toEqual([]);
 });
 
 test('scenario routes hide the live Order Book topbar', async ({ page }) => {
@@ -271,6 +268,7 @@ test('scenario launcher creates an isolated run', async ({ page }) => {
     .getByRole('link', { name: /Open scenario/ })
     .click();
   await expect(page).toHaveURL(/\/scenarios\/streamed-reveal\/.+\/BTCUSDT$/);
+  await waitForHydration(page);
   expect(
     documentRequests.some((url) =>
       /\/scenarios\/streamed-reveal\/[0-9a-f-]+\/BTCUSDT/i.test(url),
