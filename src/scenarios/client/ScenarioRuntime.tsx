@@ -6,8 +6,7 @@ import {
   useContext,
   useEffect,
   useEffectEvent,
-  useMemo,
-  useState,
+  useRef,
   type ReactNode,
   type RefObject,
 } from 'react';
@@ -337,6 +336,10 @@ export class ScenarioRuntime {
     return promise;
   }
 
+  attach() {
+    this.disposed = false;
+  }
+
   cleanup() {
     this.disposed = true;
     const listeners = [...this.listeners];
@@ -525,8 +528,19 @@ export function ScenarioRuntimeProvider({
   bootstrap: ScenarioBootstrap;
   children: ReactNode;
 }) {
-  const runtime = useMemo(() => new ScenarioRuntime(bootstrap), [bootstrap]);
-  useEffect(() => () => runtime.cleanup(), [runtime]);
+  const runtimeRef = useRef<ScenarioRuntime | null>(null);
+  if (
+    !runtimeRef.current ||
+    runtimeRef.current.bootstrap.runId !== bootstrap.runId
+  ) {
+    runtimeRef.current?.cleanup();
+    runtimeRef.current = new ScenarioRuntime(bootstrap);
+  }
+  const runtime = runtimeRef.current;
+  useEffect(() => {
+    runtime.attach();
+    return () => runtime.cleanup();
+  }, [runtime]);
   return (
     <ScenarioRuntimeContext value={runtime}>
       {children}
@@ -550,26 +564,6 @@ export function useScenarioNavigation(navigate: (symbol: string) => void) {
     if (!runtime) return;
     return runtime.setNavigate(navigate);
   }, [navigate, runtime]);
-}
-
-export function ScenarioHydrationGate({ children }: { children: ReactNode }) {
-  useRequiredScenarioRuntime();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  // Same frame on server and the first client pass so hydration matches.
-  // Mounting Provider only after paint keeps SSR from self-fetching gated
-  // panel/data routes (that hang until Advance and deadlock `next dev`).
-  if (!mounted) {
-    return (
-      <div
-        className="scenario-dashboard-frame"
-        aria-label="Dashboard loading"
-      />
-    );
-  }
-  return children;
 }
 
 export function DashboardHydratedMarker() {

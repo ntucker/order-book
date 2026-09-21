@@ -48,6 +48,30 @@ describe('ScenarioRuntime cleanup', () => {
     runtime.cleanup();
     await expect(pending).rejects.toThrow('Scenario runtime ended');
   });
+
+  it('accepts new waiters after attach following Strict Mode cleanup', async () => {
+    const runtime = new ScenarioRuntime(bootstrap());
+    runtime.cleanup();
+    runtime.attach();
+    const pending = runtime.getPanelGatePromise('ticker');
+    const milestone = bootstrap().milestones[0];
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          cursor: 1,
+          milestone,
+          clientCommands: [],
+          events: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    await runtime.advance();
+    await expect(pending).resolves.toEqual({
+      panelId: 'ticker',
+      released: true,
+    });
+  });
 });
 
 describe('releasedGatesFromMilestones', () => {

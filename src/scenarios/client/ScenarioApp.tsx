@@ -1,47 +1,27 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useSyncExternalStore } from 'react';
 
-import Provider from '@/app/Provider';
-import Dashboard from '@/components/dashboard/Dashboard';
-
-import { createScenarioEndpoints } from '../resources/createScenarioEndpoints';
-import { ResourceCatalogProvider } from '../resources/ResourceCatalog';
 import type { ScenarioBootstrap } from '../shared/types';
 import ScenarioConsole from '../ui/ScenarioConsole';
-import {
-  ScenarioHydrationGate,
-  ScenarioRuntimeProvider,
-  useRequiredScenarioRuntime,
-} from './ScenarioRuntime';
+import ScenarioDashboard from './ScenarioDashboard';
+import { ScenarioRuntimeProvider } from './ScenarioRuntime';
 
-function ScenarioDashboard({
-  bootstrap,
-  symbol,
-}: {
-  bootstrap: ScenarioBootstrap;
-  symbol: string;
-}) {
-  const runtime = useRequiredScenarioRuntime();
-  const endpoints = useMemo(
-    () => createScenarioEndpoints(bootstrap.origin, bootstrap.runId, runtime),
-    [bootstrap.origin, bootstrap.runId, runtime],
-  );
+function subscribeNever() {
+  return () => {};
+}
+
+function useClientDashboard() {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
+
+function DashboardLoading() {
   return (
     <div className="scenario-dashboard">
-      <ScenarioHydrationGate>
-        <Provider runtime={runtime}>
-          <ResourceCatalogProvider value={endpoints}>
-            <Dashboard
-              symbol={symbol}
-              scenarioPath={{
-                scenarioId: bootstrap.scenarioId,
-                runId: bootstrap.runId,
-              }}
-            />
-          </ResourceCatalogProvider>
-        </Provider>
-      </ScenarioHydrationGate>
+      <div
+        className="scenario-dashboard-frame"
+        aria-label="Dashboard loading"
+      />
     </div>
   );
 }
@@ -53,16 +33,18 @@ export default function ScenarioApp({
   bootstrap: ScenarioBootstrap;
   symbol: string;
 }) {
+  const dashboardReady = useClientDashboard();
+
   return (
     <ScenarioRuntimeProvider bootstrap={bootstrap}>
       <div className="scenario-page">
-        <Suspense
-          fallback={
-            <div className="scenario-dashboard-frame" aria-label="Dashboard loading" />
-          }
-        >
-          <ScenarioDashboard bootstrap={bootstrap} symbol={symbol} />
-        </Suspense>
+        {dashboardReady ? (
+          <Suspense fallback={<DashboardLoading />}>
+            <ScenarioDashboard bootstrap={bootstrap} symbol={symbol} />
+          </Suspense>
+        ) : (
+          <DashboardLoading />
+        )}
         <ScenarioConsole />
       </div>
     </ScenarioRuntimeProvider>
