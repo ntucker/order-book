@@ -111,6 +111,13 @@ describe('ScenarioRuntime panel gates', () => {
     fetchSpy.mockRestore();
   });
 
+  it('returns the same promise for an already-open gate', async () => {
+    const runtime = new ScenarioRuntime(bootstrap({ cursor: 1 }));
+    expect(runtime.getPanelGatePromise('ticker')).toBe(
+      runtime.getPanelGatePromise('ticker'),
+    );
+  });
+
   it('treats already-advanced bootstrap gates as open', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const runtime = new ScenarioRuntime(bootstrap({ cursor: 1 }));

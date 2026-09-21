@@ -96,9 +96,9 @@ export class ScenarioStreamManager implements Manager {
   cleanup() {
     this.unsubscribeRuntime?.();
     this.unsubscribeRuntime = undefined;
-    this.controller = undefined;
-    this.subscriptions.clear();
-    this.pending = [];
+    // DataProvider re-runs init() on Strict Mode remount but does not
+    // re-apply middleware. Nilling the controller or subscriptions here
+    // drops later scripted ticks.
   }
 
   private flushPending() {

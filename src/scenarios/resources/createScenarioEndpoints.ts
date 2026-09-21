@@ -31,10 +31,12 @@ function scenarioFetchResponse(
     url.search = original.search;
     // Record locally before the hanging GET so CompletesWhen is not blocked
     // by Chrome's HTTP/1.1 six-connection limit while response gates stay closed.
-    runtime?.recordClientEvent({
-      kind: 'request-started',
-      source: kind,
-      summary: `${kind} request started`,
+    queueMicrotask(() => {
+      runtime?.recordClientEvent({
+        kind: 'request-started',
+        source: kind,
+        summary: `${kind} request started`,
+      });
     });
     const response = await fetch(url, {
       ...init,

@@ -320,18 +320,17 @@ export class ScenarioRuntime {
   }
 
   getPanelGatePromise(panelId: string): Promise<unknown> {
+    const cached = this.panelPromises.get(panelId);
+    if (cached) return cached;
     const gateId = `panel:${panelId}`;
-    if (this.releasedGates.has(gateId)) {
-      return Promise.resolve({ panelId, released: true });
-    }
-    let promise = this.panelPromises.get(panelId);
-    if (promise) return promise;
-    // Local waiters only. A hanging GET to this Next server deadlocks
-    // `next dev` (the page render occupies the only request slot).
-    promise = this.waitUntil(() => this.releasedGates.has(gateId)).then(() => ({
-      panelId,
-      released: true,
-    }));
+    // Cache the promise so `use()` does not see a fresh Promise.resolve
+    // on every render after the gate opens.
+    const promise = this.releasedGates.has(gateId)
+      ? Promise.resolve({ panelId, released: true })
+      : this.waitUntil(() => this.releasedGates.has(gateId)).then(() => ({
+          panelId,
+          released: true,
+        }));
     this.panelPromises.set(panelId, promise);
     return promise;
   }
