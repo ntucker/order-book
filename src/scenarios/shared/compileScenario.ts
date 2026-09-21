@@ -14,6 +14,9 @@ export function compileScenario(
   definition: ScenarioDefinition,
 ): CompiledScenario {
   if (!definition.id.trim()) throw new Error('Scenario id is required');
+  if (!definition.posture) {
+    throw new Error(`Scenario "${definition.id}" is missing posture`);
+  }
   if (!definition.milestones.length) {
     throw new Error(`Scenario "${definition.id}" has no milestones`);
   }
@@ -44,6 +47,15 @@ export function compileScenario(
           `Milestone "${milestone.id}" references unknown stream event "${release.eventId}"`,
         );
       }
+    }
+
+    if (
+      milestone.completesWhen.kind === 'request-started' &&
+      milestone.completesWhen.sources.length === 0
+    ) {
+      throw new Error(
+        `Milestone "${milestone.id}" request-started predicate has no sources`,
+      );
     }
 
     return Object.freeze({ ...milestone, cursor: index + 1 });

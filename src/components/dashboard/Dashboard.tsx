@@ -47,8 +47,7 @@ function Bound({
       fallback={<PanelSkeleton kind={kind} title={title} />}
       errorComponent={PanelError}
     >
-      <ScenarioPanelGate panelId={panelId} />
-      {children}
+      <ScenarioPanelGate panelId={panelId}>{children}</ScenarioPanelGate>
     </AsyncBoundary>
   );
 }

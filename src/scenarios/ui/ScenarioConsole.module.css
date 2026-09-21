@@ -74,6 +74,29 @@
   text-transform: uppercase;
 }
 
+.posture {
+  flex: none;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  font: 10px/1.2 var(--font-num);
+  text-transform: uppercase;
+}
+
+.posture[data-posture='lock'] {
+  color: var(--scenario-accent);
+  border-color: var(--scenario-line);
+}
+
+.posture[data-posture='record'] {
+  color: var(--text);
+}
+
+.posture[data-posture='option'] {
+  color: var(--text-3);
+}
+
 .progress {
   color: var(--text-2);
   font: 11px/1 var(--font-num);

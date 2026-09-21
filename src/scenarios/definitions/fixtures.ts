@@ -163,5 +163,19 @@ export const baseFixtures: ScenarioFixtures = {
           'book-mid-price',
         ],
       },
+      'book-newer-2': {
+        stream: 'btcusdt@depth@100ms',
+        data: {
+          U: 521,
+          u: 540,
+          b: [['100.07', '3.1']],
+          a: [
+            ['100.06', '0'],
+            ['100.07', '0'],
+            ['100.08', '1.4'],
+          ],
+        },
+        occurrenceIds: ['book-panel'],
+      },
   },
 };

@@ -6,6 +6,7 @@ export const symbolTransitionScenario: ScenarioDefinition = {
   title: 'Concurrent symbol transition',
   summary:
     'BTC stays visible and live while ETH prepares, then the dashboard swaps as one committed transition.',
+  posture: 'lock',
   initialSymbol: 'BTCUSDT',
   fixtures: baseFixtures,
   milestones: [

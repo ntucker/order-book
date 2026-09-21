@@ -18,6 +18,7 @@ import type {
   ScenarioBootstrap,
   ScenarioEvent,
   ScenarioOccurrenceDescriptor,
+  ScenarioRequestKind,
   ScenarioStatus,
 } from '../shared/types';
 
@@ -45,7 +46,20 @@ function deferred() {
 
 function afterPaint(): Promise<void> {
   return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if (typeof requestAnimationFrame !== 'function') {
+      setTimeout(done, 0);
+      return;
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(done);
+    });
+    setTimeout(done, 100);
   });
 }
 
@@ -57,9 +71,11 @@ export class ScenarioRuntime {
   private streamListeners = new Set<StreamListener>();
   private occurrences = new Map<string, Occurrence>();
   private panelPromises = new Map<string, Promise<unknown>>();
+  private elementWaiters = new Set<() => void>();
   private clientSequence = 0;
   private snapshotValue: RuntimeSnapshot;
   private navigate?: (symbol: string) => void;
+  private disposed = false;
 
   constructor(bootstrap: ScenarioBootstrap) {
     this.bootstrap = bootstrap;
@@ -124,17 +140,25 @@ export class ScenarioRuntime {
   }
 
   async refresh(): Promise<void> {
-    const response = await fetch(
-      `/api/scenarios/${encodeURIComponent(this.bootstrap.runId)}`,
-      { cache: 'no-store' },
-    );
-    if (!response.ok) return;
-    const status = (await response.json()) as ScenarioStatus;
-    this.snapshotValue = {
-      ...this.snapshotValue,
-      events: this.mergeEvents(this.snapshotValue.events, status.events),
-    };
-    this.emit();
+    const abort = new AbortController();
+    const timer = window.setTimeout(() => abort.abort(), 250);
+    try {
+      const response = await fetch(
+        `/api/scenarios/${encodeURIComponent(this.bootstrap.runId)}`,
+        { cache: 'no-store', signal: abort.signal },
+      );
+      if (!response.ok) return;
+      const status = (await response.json()) as ScenarioStatus;
+      this.snapshotValue = {
+        ...this.snapshotValue,
+        events: this.mergeEvents(this.snapshotValue.events, status.events),
+      };
+      this.emit();
+    } catch {
+      // Abort or a full HTTP/1.1 connection pool must not freeze CompletesWhen.
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   async waitForCompletion(predicate: CompletionPredicate): Promise<void> {
@@ -143,7 +167,20 @@ export class ScenarioRuntime {
         await afterPaint();
         return;
       case 'dashboard-hydrated':
-        await this.waitUntil(() => this.snapshotValue.hydrated);
+        this.resolveHydration();
+        try {
+          await this.waitUntil(() => this.snapshotValue.hydrated, 15_000);
+        } catch (caught) {
+          if (
+            caught instanceof Error &&
+            caught.message === 'Timed out waiting for scenario condition'
+          ) {
+            throw new Error(
+              'Timed out waiting for DashboardHydratedMarker after hydrate-dashboard',
+            );
+          }
+          throw caught;
+        }
         await afterPaint();
         return;
       case 'panel-visible':
@@ -155,7 +192,12 @@ export class ScenarioRuntime {
       case 'occurrences-painted':
         await this.waitUntil(() =>
           predicate.occurrenceIds.every((id) =>
-            this.occurrences.has(id),
+            this.snapshotValue.events.some(
+              (event) =>
+                event.milestoneId === this.currentMilestoneId() &&
+                event.occurrenceIds.includes(id) &&
+                (event.kind === 'store-committed' || event.kind === 'command'),
+            ),
           ),
         );
         await afterPaint();
@@ -163,6 +205,11 @@ export class ScenarioRuntime {
       case 'navigation-committed':
         await this.waitForPathname(predicate.symbol);
         await afterPaint();
+        return;
+      case 'request-started':
+        await this.waitForRequestStarted(predicate.sources);
+        await afterPaint();
+        return;
     }
   }
 
@@ -274,10 +321,15 @@ export class ScenarioRuntime {
   }
 
   cleanup() {
+    this.disposed = true;
+    const listeners = [...this.listeners];
     this.listeners.clear();
     this.streamListeners.clear();
     this.occurrences.clear();
     this.panelPromises.clear();
+    for (const disconnect of this.elementWaiters) disconnect();
+    this.elementWaiters.clear();
+    for (const listener of listeners) listener();
   }
 
   private applyCommand(command: ClientScenarioCommand) {
@@ -311,11 +363,28 @@ export class ScenarioRuntime {
     for (const listener of this.listeners) listener();
   }
 
-  private waitUntil(test: () => boolean): Promise<void> {
+  private waitUntil(test: () => boolean, timeoutMs = Infinity): Promise<void> {
+    if (this.disposed) {
+      return Promise.reject(new Error('Scenario runtime ended'));
+    }
     if (test()) return Promise.resolve();
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const timer =
+        timeoutMs < Infinity
+          ? window.setTimeout(() => {
+              unsubscribe();
+              reject(new Error('Timed out waiting for scenario condition'));
+            }, timeoutMs)
+          : undefined;
       const unsubscribe = this.subscribe(() => {
+        if (this.disposed) {
+          if (timer) window.clearTimeout(timer);
+          unsubscribe();
+          reject(new Error('Scenario runtime ended'));
+          return;
+        }
         if (!test()) return;
+        if (timer) window.clearTimeout(timer);
         unsubscribe();
         resolve();
       });
@@ -323,15 +392,32 @@ export class ScenarioRuntime {
   }
 
   private waitForElement(selector: string): Promise<Element> {
+    if (this.disposed) {
+      return Promise.reject(new Error('Scenario runtime ended'));
+    }
     const current = document.querySelector(selector);
     if (current) return Promise.resolve(current);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error, element?: Element) => {
+        if (settled) return;
+        settled = true;
+        this.elementWaiters.delete(disconnect);
+        observer.disconnect();
+        if (error) reject(error);
+        else resolve(element as Element);
+      };
+      const disconnect = () => finish(new Error('Scenario runtime ended'));
       const observer = new MutationObserver(() => {
+        if (this.disposed) {
+          finish(new Error('Scenario runtime ended'));
+          return;
+        }
         const element = document.querySelector(selector);
         if (!element) return;
-        observer.disconnect();
-        resolve(element);
+        finish(undefined, element);
       });
+      this.elementWaiters.add(disconnect);
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
@@ -342,17 +428,66 @@ export class ScenarioRuntime {
   private waitForPathname(symbol: string): Promise<void> {
     const deadline = performance.now() + 15_000;
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        if (error) reject(error);
+        else resolve();
+      };
       const check = () => {
-        if (window.location.pathname.endsWith(`/${symbol}`)) {
-          resolve();
+        if (this.disposed) {
+          finish(new Error('Scenario runtime ended'));
+        } else if (window.location.pathname.endsWith(`/${symbol}`)) {
+          finish();
         } else if (performance.now() >= deadline) {
-          reject(new Error(`Navigation to ${symbol} did not commit`));
+          finish(new Error(`Navigation to ${symbol} did not commit`));
         } else {
           requestAnimationFrame(check);
         }
       };
       check();
     });
+  }
+
+  private async waitForRequestStarted(
+    sources: ScenarioRequestKind[],
+  ): Promise<void> {
+    if (!sources.length) {
+      throw new Error('request-started predicate requires sources');
+    }
+    const milestoneId = this.currentMilestoneId();
+    const seen = () =>
+      sources.every((source) => {
+        const startedEvents = this.snapshotValue.events.filter(
+          (event) =>
+            event.kind === 'request-started' && event.source === source,
+        );
+        if (!startedEvents.length) return false;
+        const released = this.snapshotValue.events.some(
+          (event) =>
+            event.kind === 'response-released' && event.source === source,
+        );
+        // In-flight rows may be tagged with the previous cursor if the panel
+        // GET resumed before this advance() response updated the client cursor.
+        return (
+          startedEvents.some((event) => event.milestoneId === milestoneId) ||
+          !released
+        );
+      });
+    try {
+      await this.waitUntil(seen, 15_000);
+    } catch (caught) {
+      if (
+        caught instanceof Error &&
+        caught.message === 'Timed out waiting for scenario condition'
+      ) {
+        throw new Error(
+          `Timed out waiting for request-started: ${sources.join(', ')}`,
+        );
+      }
+      throw caught;
+    }
   }
 }
 
@@ -404,11 +539,21 @@ export function DashboardHydratedMarker() {
   return null;
 }
 
-export function ScenarioPanelGate({ panelId }: { panelId: string }) {
+export function ScenarioPanelGate({
+  panelId,
+  children,
+}: {
+  panelId: string;
+  children?: ReactNode;
+}) {
   const runtime = useScenarioRuntime();
-  if (!runtime) return null;
-  use(runtime.getPanelGatePromise(panelId));
-  return <i hidden data-scenario-panel={panelId} />;
+  if (runtime) use(runtime.getPanelGatePromise(panelId));
+  return (
+    <>
+      {runtime ? <i hidden data-scenario-panel={panelId} /> : null}
+      {children}
+    </>
+  );
 }
 
 export function useScenarioOccurrence(

@@ -57,4 +57,27 @@ describe('compileScenario', () => {
       }),
     ).toThrow('unknown stream event');
   });
+
+  it('rejects a missing posture', () => {
+    expect(() =>
+      compileScenario({
+        ...streamedRevealScenario,
+        posture: undefined as never,
+      }),
+    ).toThrow('missing posture');
+  });
+
+  it('rejects an empty request-started predicate', () => {
+    expect(() =>
+      compileScenario({
+        ...streamedRevealScenario,
+        milestones: [
+          {
+            ...streamedRevealScenario.milestones[0],
+            completesWhen: { kind: 'request-started', sources: [] },
+          },
+        ],
+      }),
+    ).toThrow('no sources');
+  });
 });

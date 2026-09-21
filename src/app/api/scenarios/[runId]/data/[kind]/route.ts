@@ -26,13 +26,9 @@ export async function GET(
   if (!session) {
     return Response.json({ error: 'Unknown scenario run' }, { status: 404 });
   }
-  const milestoneId =
-    session.scenario.gateOwners[
-      session.scenario.fixtures.responseGates[kind] ?? ''
-    ] ?? 'bootstrap';
   const url = new URL(request.url);
   session.record({
-    milestoneId,
+    milestoneId: session.currentMilestoneId(),
     phase: 'server',
     kind: 'request-started',
     source: kind,
@@ -43,7 +39,7 @@ export async function GET(
   if (gateId) await session.waitForGate(gateId, request.signal);
   const body = fixtureResponse(session, kind, url.searchParams);
   session.record({
-    milestoneId,
+    milestoneId: session.currentMilestoneId(),
     phase: 'server',
     kind: 'response-released',
     source: kind,

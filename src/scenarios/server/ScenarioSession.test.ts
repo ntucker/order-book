@@ -46,6 +46,18 @@ describe('ScenarioSession', () => {
     expect(resolved).toHaveBeenCalledOnce();
   });
 
+  it('tags the releasing milestone as current before waiters resume', async () => {
+    const session = makeSession();
+    let seen: string | undefined;
+    const waiting = session.waitForGate('response:ticker').then(() => {
+      seen = session.currentMilestoneId();
+    });
+    session.advance({ expectedCursor: 0, commandId: 'one' });
+    await waiting;
+    expect(seen).toBe('markets-visible');
+    expect(session.cursor).toBe(1);
+  });
+
   it('honors aborted waiters', async () => {
     const session = makeSession();
     const abort = new AbortController();
