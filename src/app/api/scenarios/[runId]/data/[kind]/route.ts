@@ -1,4 +1,7 @@
-import { writeOpenFixture } from '@/scenarios/server/fixtureResponse';
+import {
+  recordFixtureRequest,
+  writeOpenFixture,
+} from '@/scenarios/server/fixtureResponse';
 import { getScenarioSession } from '@/scenarios/server/registry';
 import type { ScenarioRequestKind } from '@/scenarios/shared/types';
 
@@ -27,6 +30,7 @@ export async function GET(
     return Response.json({ error: 'Unknown scenario run' }, { status: 404 });
   }
   const gateId = session.scenario.fixtures.responseGates[kind];
+  recordFixtureRequest(session, kind);
   if (gateId) await session.waitForGate(gateId, request.signal);
   return writeOpenFixture(session, kind, new URL(request.url).searchParams);
 }

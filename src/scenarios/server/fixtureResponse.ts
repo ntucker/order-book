@@ -65,11 +65,10 @@ export function fixtureResponse(
   }
 }
 
-export function writeOpenFixture(
+export function recordFixtureRequest(
   session: ScenarioSession,
   kind: ScenarioRequestKind,
-  search: URLSearchParams,
-): Response {
+) {
   session.record({
     milestoneId: session.currentMilestoneId(),
     phase: 'server',
@@ -77,6 +76,13 @@ export function writeOpenFixture(
     source: kind,
     summary: `${kind} request started`,
   });
+}
+
+export function writeOpenFixture(
+  session: ScenarioSession,
+  kind: ScenarioRequestKind,
+  search: URLSearchParams,
+): Response {
   const body = fixtureResponse(session, kind, search);
   session.record({
     milestoneId: session.currentMilestoneId(),

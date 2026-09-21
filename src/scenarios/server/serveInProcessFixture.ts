@@ -1,5 +1,5 @@
 import type { ScenarioRequestKind } from '../shared/types';
-import { writeOpenFixture } from './fixtureResponse';
+import { recordFixtureRequest, writeOpenFixture } from './fixtureResponse';
 import type { ScenarioSession } from './ScenarioSession';
 
 const REGISTRY = Symbol.for('order-book.scenario-sessions');
@@ -28,5 +28,6 @@ export async function serveInProcessFixture(
   if (gateId && !session.isGateReleased(gateId)) {
     throw new DOMException('Response gate closed', 'AbortError');
   }
+  recordFixtureRequest(session, kind);
   return writeOpenFixture(session, kind, new URLSearchParams(search));
 }
