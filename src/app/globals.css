@@ -48,12 +48,13 @@
 
 html {
   height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
 }
 
 body {
@@ -103,20 +104,30 @@ button {
   overflow: hidden;
 }
 
+.shell:has(.scenario-route) {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+  grid-template-rows: 48px auto;
+}
+
+.scenario-route {
+  min-height: calc(100dvh - 48px);
+}
+
 .scenario-page {
-  height: 100%;
-  min-height: 0;
+  min-height: calc(100dvh - 48px);
   display: grid;
-  grid-template-rows: minmax(520px, 1fr) 316px;
-  overflow: auto;
+  grid-template-rows: minmax(520px, calc(100dvh - 364px)) 316px;
 }
 
-.scenario-dashboard,
-.scenario-dashboard-frame {
+.scenario-dashboard {
   min-height: 520px;
+  height: 100%;
 }
 
 .scenario-dashboard-frame {
+  min-height: calc(520px - 24px);
   margin: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -168,8 +179,11 @@ button {
     overflow: auto;
   }
 
+  .shell:has(.scenario-route) {
+    overflow: visible;
+  }
+
   .scenario-page {
-    height: auto;
     grid-template-rows: auto auto;
   }
 }
