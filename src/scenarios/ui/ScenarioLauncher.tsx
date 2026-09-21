@@ -2,8 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 
-import { POSTURE_HINT, POSTURE_LABEL } from '../shared/posture';
+import { POSTURE_LABEL } from '../shared/posture';
 import type { ScenarioPosture } from '../shared/types';
+import ScenarioDiagram from './ScenarioDiagram';
 import styles from './ScenarioLauncher.module.css';
 
 export default function ScenarioLauncher({
@@ -12,7 +13,6 @@ export default function ScenarioLauncher({
   scenarios: {
     id: string;
     title: string;
-    summary: string;
     posture: ScenarioPosture;
     symbol: string;
   }[];
@@ -23,11 +23,13 @@ export default function ScenarioLauncher({
       <header className={styles.header}>
         <span className={styles.eyebrow}>Reactive Data Client laboratory</span>
         <h1>Deterministic order-book scenarios</h1>
-        <p>
-          Stop time, advance one visible change, and inspect the normalized
-          store impact beneath the real dashboard. Ledger diamonds record that
-          a step happened. Only cards marked Lock assert an invariant.
-        </p>
+        <ul className={styles.legend} aria-label="Diagram legend">
+          <li data-kind="skeleton">░░░░ skeleton</li>
+          <li data-kind="static">100.01 server</li>
+          <li data-kind="live">100.05▲ live</li>
+          <li data-kind="request">⟳ request</li>
+          <li data-kind="blank">✗ never</li>
+        </ul>
       </header>
       <div className={styles.grid}>
         {scenarios.map((scenario, index) => (
@@ -35,19 +37,21 @@ export default function ScenarioLauncher({
             className={styles.card}
             key={scenario.id}
             data-posture={scenario.posture}
+            data-scenario={scenario.id}
           >
-            <span className={styles.number}>
-              {String(index + 1).padStart(2, '0')}
-            </span>
-            <span
-              className={styles.posture}
-              data-posture={scenario.posture}
-            >
-              {POSTURE_LABEL[scenario.posture]}
-            </span>
+            <div className={styles.meta}>
+              <span className={styles.number}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span
+                className={styles.posture}
+                data-posture={scenario.posture}
+              >
+                {POSTURE_LABEL[scenario.posture]}
+              </span>
+            </div>
             <h2>{scenario.title}</h2>
-            <p>{scenario.summary}</p>
-            <p className={styles.hint}>{POSTURE_HINT[scenario.posture]}</p>
+            <ScenarioDiagram id={scenario.id} />
             <button
               type="button"
               onClick={() =>

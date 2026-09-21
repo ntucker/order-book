@@ -1,0 +1,15 @@
+export const SCENARIO_DIAGRAM_IDS = [
+  'streamed-reveal',
+  'late-server-merge',
+  'symbol-transition',
+  'readiness-from-records',
+  'rapid-book-updates',
+  'handoff-outcome-a',
+  'handoff-outcome-b',
+  'handoff-outcome-c',
+  'live-after-hydrate',
+  'hidden-pane-subscriptions',
+  'route-h',
+  'route-w-fetch-now',
+  'symbol-return',
+] as const;

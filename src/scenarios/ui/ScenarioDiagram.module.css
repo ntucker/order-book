@@ -1,0 +1,189 @@
+.figure {
+  margin: 16px 0 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.board {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+}
+
+.head,
+.row {
+  display: grid;
+  grid-template-columns: 46px repeat(var(--cols), minmax(0, 1fr));
+  gap: 3px;
+  align-items: stretch;
+}
+
+.label,
+.time {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 9px/1.1 var(--font-num);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.time {
+  padding: 0 2px 4px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+}
+
+.cell {
+  min-height: 28px;
+  padding: 4px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 10px/1.15 var(--font-num);
+  text-align: center;
+}
+
+.cell[data-kind='skeleton'] {
+  color: transparent;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--text-3) 28%, transparent) 0 4px,
+      transparent 4px 7px
+    ),
+    var(--surface-3);
+}
+
+.cell[data-kind='blank'] {
+  color: var(--ask);
+  background: color-mix(in oklab, var(--ask) 8%, var(--surface));
+  border-color: color-mix(in oklab, var(--ask) 22%, var(--border));
+}
+
+.cell[data-kind='static'] {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.cell[data-kind='live'] {
+  color: var(--bid);
+  background: var(--bid-soft);
+  border-color: color-mix(in oklab, var(--bid) 28%, var(--border));
+}
+
+.cell[data-kind='reject'] {
+  color: var(--ask);
+  background: var(--ask-soft);
+  border-color: color-mix(in oklab, var(--ask) 30%, var(--border));
+  text-decoration: line-through;
+}
+
+.cell[data-kind='request'] {
+  color: var(--accent);
+  background: var(--scenario-soft);
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--border));
+}
+
+.cell[data-kind='idle'] {
+  color: var(--text-3);
+  background: color-mix(in oklab, var(--surface-3) 70%, transparent);
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+
+.cell[data-kind='hidden'] {
+  color: var(--text-3);
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border);
+  opacity: 0.55;
+}
+
+.mark {
+  font-size: 9px;
+}
+
+.phone {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.device {
+  padding: 6px 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-3);
+  display: grid;
+  gap: 4px;
+}
+
+.notch {
+  width: 18px;
+  height: 3px;
+  margin: 0 auto 2px;
+  border-radius: 99px;
+  background: var(--border-strong);
+}
+
+.pane {
+  min-height: 22px;
+  border-radius: 4px;
+  border: 1px dashed var(--border);
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  font: 9px/1 var(--font-num);
+}
+
+.pane[data-on='true'] {
+  border-style: solid;
+  border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+  background: var(--scenario-soft);
+  color: var(--text);
+}
+
+.switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2px;
+}
+
+.switcher span {
+  padding: 3px 0;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font: 8px/1 var(--font-num);
+  text-align: center;
+}
+
+.switcher span[data-on='true'] {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.store {
+  display: grid;
+  gap: 4px;
+}
+
+.arrow {
+  color: var(--text-3);
+  font: 10px/1 var(--font-num);
+  text-align: center;
+}
