@@ -1,10 +1,4 @@
 allowBuilds:
   unrs-resolver: false
 minimumReleaseAgeExclude:
-  - '@data-client/core@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/endpoint@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/normalizr@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/react@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/rest@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/test@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
-  - '@data-client/use-enhanced-reducer@0.2.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a'
+  - '@data-client/*'
