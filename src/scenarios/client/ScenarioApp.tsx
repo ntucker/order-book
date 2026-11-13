@@ -1,7 +1,7 @@
 'use client';
 
 import { DataProvider } from '@data-client/react/nextjs';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 
 import getManagers from '@/app/getManagers';
 import Dashboard from '@/components/dashboard/Dashboard';
@@ -39,7 +39,7 @@ function ScenarioDashboard({
     () => createScenarioEndpoints(bootstrap.runId, runtime),
     [bootstrap.runId, runtime],
   );
-  const managers = useMemo(() => getManagers(runtime), [runtime]);
+  const managers = useCallback(() => getManagers(runtime), [runtime]);
   return (
     <div className="scenario-dashboard" data-scenario-dashboard="">
       <DataProvider managers={managers} devButton={null}>
