@@ -11,15 +11,15 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@data-client/react": "^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda",
-    "@data-client/rest": "^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda",
+    "@data-client/react": "^0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a",
+    "@data-client/rest": "^0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a",
     "lightweight-charts": "^5.3.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@data-client/test": "0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda",
+    "@data-client/test": "0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a",
     "@playwright/test": "^1.65.0",
     "@types/node": "^20.19.43",
     "@types/react": "^19.3.0",

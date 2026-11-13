@@ -110,11 +110,11 @@ importers:
   .:
     dependencies:
       '@data-client/react':
-        specifier: ^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
-        version: 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1)
+        specifier: ^0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
+        version: 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1)
       '@data-client/rest':
-        specifier: ^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
-        version: 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
+        specifier: ^0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
+        version: 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
       lightweight-charts:
         specifier: ^5.3.0
         version: 5.3.0
@@ -129,8 +129,8 @@ importers:
         version: 19.3.1(react@19.3.1)
     devDependencies:
       '@data-client/test':
-        specifier: 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
-        version: 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@data-client/react@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
+        version: 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@data-client/react@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@playwright/test':
         specifier: ^1.65.0
         version: 1.65.0
@@ -229,21 +229,21 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@data-client/core@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-gIX6MwfzFiRTPdo2rkYAgodVfo99DiyeZLdV5uwGaIyfUjCdmY14nb/eT1J/sIsZG2bgsJK9QZdys6Qto21w2w==}
+  '@data-client/core@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-E8alZZs0Tzv8iAfEnn63MKAnsFFDBqOOAbYafQ2Ftl22ciJPKvO7212Nn6TxTbvW2PSMueNpMO9v3f+hzYRJ9Q==}
     engines: {node: ^12.17 || ^13.7 || >=14}
 
-  '@data-client/endpoint@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-LfxD0awhekrz+7q5WAPB+GkDRMNZvanstQidCWJWggcCyhMsCfIU0znk8G80gOYc8Y7JE31PJvXcfXjyha09vw==}
+  '@data-client/endpoint@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-z7ysTNk4x5Qo/L6wsiBK+t2dYBQbDmPC24H6WtMvbWDhAV1sgVSBqd2z90AzXB0LC6tUpPudb1pLBTgVhNE00A==}
     engines: {node: ^12.17 || ^13.7 || >=14}
     hasBin: true
 
-  '@data-client/normalizr@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-Z4Z9KXliQ0/u+YC69KfSB/FrWgi8MRWYwhmCxaoszqdKYc2w1slrZWMyH5EIznHLCCFCwoIMVs4ykVINtN2UgQ==}
+  '@data-client/normalizr@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-zmxQyQsGkVCUQF7wtRdUVPmO50Yc7OZKq5hWaVF0E+njDbjvYE0TM6fvdSGoWB0FDMdlLfzD+GisfxH4fcbvoQ==}
     engines: {node: ^12.17 || ^13.7 || >=14}
 
-  '@data-client/react@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-2YWIvcfS+Cxj40ftNomi4/WjHhwLEUxPPuCVPXiCHSyZJffxiwMe15jvMaFT8YhZBQJOoE9DJs3Od+CryXhbbg==}
+  '@data-client/react@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-bRSJ/37HxNQyOyLLs6WMImJ2ahmMr/PDDp8PhWARERGcEGNqGqA5Wkxi7VkYDpgSlB/oloNYG1ZkvTFJ2pelmg==}
     engines: {node: ^12.17 || ^13.7 || >=14}
     hasBin: true
     peerDependencies:
@@ -256,13 +256,13 @@ packages:
       '@types/react':
         optional: true
 
-  '@data-client/rest@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-tjwQy4fZLkoYSxQuwMbyAj/axFwp5wHR4u6X5WizfPsOYLzCDasm4gVxTMb52PhXJnhQtmFSOXplUjpJdgSFYw==}
+  '@data-client/rest@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-9FZVrHkqwBFM/qSAJENU5Qp50ff/10TY0MqsIb08QPdsMeLqePVrtIQDXYb1PqoICFzr3CayVhW5DryZDUZ/nw==}
     engines: {node: ^12.17 || ^13.7 || >=14}
     hasBin: true
 
-  '@data-client/test@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-x0IO4pXLTGpwvePnSZtZD5tbnzm2rWr1qUpgC/HGWKH8Q6x/iHByLrgVcZZjpW5I2pIks8lUZwm6Q/CzK8R0Og==}
+  '@data-client/test@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-zU6v6GvD7RneUYBz7xSaTk5UOERf9dGNNmSFWmT55lps9a7kyhAoNRDXUl9rDF+JNDZV2qbvVrOw4ayGk2sDtg==}
     engines: {node: ^12.17 || ^13.7 || >=14}
     peerDependencies:
       '@data-client/react': ^0.19.0-0
@@ -296,8 +296,8 @@ packages:
       test-renderer:
         optional: true
 
-  '@data-client/use-enhanced-reducer@0.2.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
-    resolution: {integrity: sha512-IjRIy40aAbpCrnmv7EJh6CTMByNQs32yW+9pp3EfCsJd0BqJey0ykrzcRxHZp3tYg2KRvN8O/ij23HTecrad5A==}
+  '@data-client/use-enhanced-reducer@0.2.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
+    resolution: {integrity: sha512-WEo0pTlaCilc8xDSa4MXWk+YX4YjDlJiFAvcLWsS0waLpi0Ci87xMKwuUEtTErHH+pRHXf7LMmlewsJIWC8hTg==}
     peerDependencies:
       '@types/react': ^16.14.0 || ^17.0.0 || ^18.0.0-0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
       react: ^16.14.0 || ^17.0.0 || ^18.0.0-0 || ^18.0.0 || ^19.0.0-0 || ^19.0.0
@@ -2529,39 +2529,39 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@data-client/core@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
+  '@data-client/core@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
     dependencies:
       '@babel/runtime': 7.29.7
-      '@data-client/normalizr': 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
+      '@data-client/normalizr': 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
       flux-standard-action: 2.1.2
 
-  '@data-client/endpoint@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
+  '@data-client/endpoint@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@data-client/normalizr@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
+  '@data-client/normalizr@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@data-client/react@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1)':
+  '@data-client/react@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@babel/runtime': 7.29.7
-      '@data-client/core': 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
-      '@data-client/use-enhanced-reducer': 0.2.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1)
+      '@data-client/core': 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
+      '@data-client/use-enhanced-reducer': 0.2.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1)
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@data-client/rest@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda':
+  '@data-client/rest@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a':
     dependencies:
       '@babel/runtime': 7.29.7
-      '@data-client/endpoint': 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda
+      '@data-client/endpoint': 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a
       path-to-regexp: 8.4.2
 
-  '@data-client/test@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@data-client/react@0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@data-client/test@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@data-client/react@0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@babel/runtime': 7.29.7
-      '@data-client/react': 0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1)
+      '@data-client/react': 0.19.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1)
       '@testing-library/dom': 10.4.2
       '@testing-library/react': 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react: 19.3.1
@@ -2570,7 +2570,7 @@ snapshots:
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
       react-dom: 19.3.1(react@19.3.1)
 
-  '@data-client/use-enhanced-reducer@0.2.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda(@types/react@19.3.0)(react@19.3.1)':
+  '@data-client/use-enhanced-reducer@0.2.0-beta-20261113052655-f7af45aa6ae4b5ee5e7106b731e1f2b2b152533a(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
       '@babel/runtime': 7.29.7
       react: 19.3.1
