@@ -11,22 +11,22 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@data-client/react": "^0.18.1",
-    "@data-client/rest": "^0.18.1",
-    "lightweight-charts": "^5.2.1",
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "@data-client/react": "^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda",
+    "@data-client/rest": "^0.19.0-beta-20261108175612-3ae266bf35a5a44fec04d951fc8503e0cb578dda",
+    "lightweight-charts": "^5.3.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.4",
-    "typescript": "^5",
-    "vitest": "^5.0.1"
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.6",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
   },
   "packageManager": "pnpm@12.3.4"
 }
