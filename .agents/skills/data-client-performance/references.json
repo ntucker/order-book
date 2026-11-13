@@ -1,8 +1,0 @@
-{
-  "frameworks": [
-    "react"
-  ],
-  "docs": {
-    "performance-pass.md": "docs/core/guides/performance-pass.md"
-  }
-}
